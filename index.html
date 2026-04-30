@@ -4,28 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elite Management - Pro Billing & Admin Control</title>
+    
+    <!-- Ikon Aplikasi & Web -->
+    <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj">
+    <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ElitePro">
+
+    <!-- Manifest PWA -->
+    <link rel="manifest" id="pwa-manifest">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; overflow-x: hidden; }
+        
+        /* Cinematic Opening Styles */
+        #opening-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+        }
+
+        .logo-glow {
+            filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.5));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .fade-in-text {
+            animation: fadeIn 2s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading progress bar for cinematic effect */
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 40px;
+        }
+
+        .loader-progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(to right, #6366f1, #ef4444);
+            animation: load 3s ease-in-out forwards;
+        }
+
+        @keyframes load {
+            to { width: 100%; }
+        }
+
+        /* App Styles */
         .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .card-active { border-left: 4px solid #10b981; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1); }
         .card-expired { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.1); animation: pulse-red 1.5s infinite; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         
         .admin-nav-tab { position: relative; transition: all 0.3s ease; opacity: 0.5; font-weight: 700; }
-        .admin-nav-tab.active { opacity: 1; color: #818cf8; }
-        .admin-nav-tab.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #6366f1; border-radius: 2px; }
+        .admin-nav-tab.active { opacity: 1; color: #ef4444; }
+        .admin-nav-tab.active::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 100%; height: 2px; background: #ef4444; border-radius: 2px; }
         
-        /* Receipt Print Styling */
+        #receipt-print-temp { display: none; }
+
         @media print {
             body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { position: fixed; left: 0; top: 0; width: 80mm; background: white !important; color: black !important; padding: 10mm; font-family: 'Courier New', Courier, monospace; }
-            .no-print { display: none !important; }
+            #receipt-print-temp { 
+                display: block !important; 
+                visibility: visible !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: black !important;
+                background: white !important;
+                padding: 20px;
+                font-family: 'Courier New', Courier, monospace;
+            }
+            #receipt-print-temp * { visibility: visible !important; }
+            @page { margin: 0; }
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -33,13 +112,80 @@
 </head>
 <body class="min-h-screen">
 
-    <!-- Header & Title Area -->
+    <!-- Cinematic Opening Screen -->
+    <div id="opening-screen">
+        <div class="logo-glow w-32 h-32 md:w-48 md:h-48 overflow-hidden rounded-[2.5rem] mb-8 shadow-2xl">
+            <img src="https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj" alt="Logo" class="w-full h-full object-cover">
+        </div>
+        <div class="text-center fade-in-text">
+            <h1 class="text-4xl md:text-6xl font-black tracking-tighter text-white uppercase mb-2">
+                ELITE <span class="text-red-600">PRO</span>
+            </h1>
+            <p class="text-slate-400 text-xs md:text-sm font-bold tracking-[0.4em] uppercase">Management System</p>
+            
+            <div class="loader-bar mx-auto">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+        <div class="absolute bottom-10 text-[10px] text-slate-600 font-bold tracking-widest uppercase">
+            Designed for Excellence
+        </div>
+    </div>
+
+    <!-- Area Cetak Tersembunyi -->
+    <div id="receipt-print-temp">
+        <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+            <h2 style="margin: 0; font-size: 20px;">ELITE PRO MANAGER</h2>
+            <p style="margin: 5px 0; font-size: 10px; line-height: 1.2;">
+                Jalan St Stephanus Martir Pamatang Raya, Bahapal Raya, Kec. Raya,<br>
+                Kabupaten Simalungun, Sumatera Utara 21162
+            </p>
+            <p id="print-date" style="margin: 0; font-size: 11px;"></p>
+        </div>
+        <div style="font-size: 12px; line-height: 1.5;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Unit:</span> <span id="print-station" style="font-weight: bold;"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Pelanggan:</span> <span id="print-cust"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
+                <span>Durasi:</span> <span id="print-duration"></span>
+            </div>
+            <div style="margin-top: 10px; font-weight: bold;">RINCIAN:</div>
+            <div id="print-items-list" style="margin-bottom: 10px;"></div>
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;">
+                    <span>TOTAL:</span> <span id="print-total"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Metode:</span> <span id="print-method"></span>
+                </div>
+                <div id="print-cash-only" style="display: none;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Bayar:</span> <span id="print-paid"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Kembali:</span> <span id="print-change"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; border-top: 1px dashed #000; padding-top: 10px; font-size: 10px;">
+            Terima kasih telah berkunjung!<br>
+            Elite Pro Management System
+        </div>
+    </div>
+
+    <!-- Header -->
     <header class="glass sticky top-0 z-50 shadow-2xl">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center text-white">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/20">E</div>
+                <div class="w-10 h-10 overflow-hidden rounded-xl shadow-lg shadow-indigo-500/20">
+                    <img src="https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj" alt="Logo" class="w-full h-full object-cover">
+                </div>
                 <div>
-                    <h1 class="text-xl font-black tracking-tighter leading-none text-white">ELITE <span class="text-indigo-400">PRO</span></h1>
+                    <h1 class="text-xl font-black tracking-tighter leading-none">ELITE <span class="text-red-500">PRO</span></h1>
                     <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-1">Sesi Aktif</p>
                 </div>
             </div>
@@ -49,14 +195,13 @@
                     <p id="clockDate" class="text-[10px] text-slate-500 font-bold uppercase"></p>
                     <p id="clockTime" class="text-sm font-mono font-bold text-indigo-300 leading-none"></p>
                 </div>
-                <button onclick="openLoginModal()" class="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-indigo-600 transition-all group font-bold text-xs uppercase tracking-widest text-white">
+                <button onclick="openLoginModal()" class="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-indigo-600 transition-all group font-bold text-xs uppercase tracking-widest">
                     <span>⚙️</span> ADMIN
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Dashboard Sesi Aktif -->
     <main id="dashboard-view" class="max-w-7xl mx-auto px-6 py-8">
         <div id="stationsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </main>
@@ -65,279 +210,175 @@
     <div id="loginModal" class="fixed inset-0 z-[400] hidden flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
         <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-2xl">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 font-black text-2xl text-white">E</div>
+                <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden shadow-lg shadow-indigo-500/30">
+                    <img src="https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj" alt="Logo" class="w-full h-full object-cover text-white">
+                </div>
                 <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Admin Login</h2>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Akses Terbatas</p>
             </div>
             <div class="space-y-4">
-                <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none transition-all font-bold text-white">
-                <input type="password" id="loginPass" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none transition-all font-bold text-white">
-                <div class="pt-2">
-                    <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black transition-all shadow-lg shadow-indigo-600/30 uppercase text-xs tracking-widest text-white">Masuk Panel Control</button>
-                    <button onclick="closeModals()" class="w-full text-slate-500 py-4 font-bold text-xs uppercase tracking-widest">Batal</button>
-                </div>
+                <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none font-bold text-white">
+                <input type="password" id="loginPass" placeholder="Password" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none font-bold text-white">
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black text-white uppercase text-xs">Masuk Panel Control</button>
+                <button onclick="closeModals()" class="w-full text-slate-500 py-4 font-bold text-xs uppercase text-white">Batal</button>
             </div>
         </div>
     </div>
 
     <!-- Panel Admin -->
     <div id="adminPanelModal" class="fixed inset-0 z-[200] hidden bg-slate-950 overflow-y-auto">
-        <!-- Sidebar/Tab Navigation for Admin -->
         <div class="sticky top-0 z-[210] glass border-b border-slate-800 px-8 py-4">
             <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center gap-6">
-                    <h2 class="text-xl font-black uppercase tracking-tighter text-white">Admin <span class="text-indigo-400">Control</span></h2>
-                    <div class="h-6 w-[1px] bg-slate-800 hidden md:block"></div>
-                    <nav class="flex gap-6 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-                        <button onclick="switchAdminTab('units')" id="at-units" class="admin-nav-tab active text-[10px] uppercase tracking-widest text-white">Manajemen Unit</button>
-                        <button onclick="switchAdminTab('history')" id="at-history" class="admin-nav-tab text-[10px] uppercase tracking-widest text-white">Riwayat Transaksi</button>
-                        <button onclick="switchAdminTab('settings')" id="at-settings" class="admin-nav-tab text-[10px] uppercase tracking-widest text-amber-400">Pengaturan Akun</button>
+                    <h2 class="text-xl font-black uppercase tracking-tighter text-white">Admin <span class="text-red-500">Control</span></h2>
+                    <nav class="flex gap-6">
+                        <button onclick="switchAdminTab('units')" id="at-units" class="admin-nav-tab active text-[10px] uppercase text-white">Manajemen Unit</button>
+                        <button onclick="switchAdminTab('history')" id="at-history" class="admin-nav-tab text-[10px] uppercase text-white">Riwayat Transaksi</button>
+                        <button onclick="switchAdminTab('settings')" id="at-settings" class="admin-nav-tab text-[10px] uppercase text-amber-400">Pengaturan Akun</button>
                     </nav>
                 </div>
-                <button onclick="closeModals()" class="bg-slate-800 px-6 py-2 rounded-xl font-black hover:bg-red-600 transition-all text-xs uppercase tracking-widest text-white text-white">Keluar</button>
+                <button onclick="closeModals()" class="bg-slate-800 px-6 py-2 rounded-xl font-black hover:bg-red-600 transition-all text-xs uppercase text-white">Keluar</button>
             </div>
         </div>
 
         <div class="max-w-7xl mx-auto p-8">
-            <!-- Admin View: Units & Menu -->
-            <div id="admin-units-view" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Meja -->
+            <div id="admin-units-view" class="grid grid-cols-1 lg:grid-cols-3 gap-8 text-white">
                 <div class="glass p-8 rounded-[2rem]">
-                    <h3 class="font-black text-indigo-400 mb-8 uppercase tracking-widest text-xs flex items-center gap-2">
-                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span> 1. Daftar Unit
-                    </h3>
+                    <h3 class="font-black text-indigo-400 mb-8 uppercase text-xs">1. Daftar Unit</h3>
                     <div class="flex gap-2 mb-8">
-                        <button onclick="addStation('billiard')" class="flex-1 bg-indigo-600 py-4 rounded-2xl text-[10px] font-black tracking-widest hover:bg-indigo-500 transition-all text-white">+ BILLIARD</button>
-                        <button onclick="addStation('ps')" class="flex-1 bg-slate-800 py-4 rounded-2xl text-[10px] font-black tracking-widest hover:bg-slate-700 transition-all text-white">+ PS</button>
+                        <button onclick="addStation('billiard')" class="flex-1 bg-indigo-600 py-4 rounded-2xl text-[10px] font-black text-white hover:bg-indigo-500">+ BILLIARD</button>
+                        <button onclick="addStation('ps')" class="flex-1 bg-slate-800 py-4 rounded-2xl text-[10px] font-black text-white hover:bg-slate-700">+ PS</button>
                     </div>
                     <div id="adminStationList" class="space-y-2 max-h-[400px] overflow-y-auto pr-2"></div>
                 </div>
-                <!-- Paket -->
                 <div class="glass p-8 rounded-[2rem] min-h-[400px]">
-                    <h3 class="font-black text-indigo-400 mb-8 uppercase tracking-widest text-xs flex items-center gap-2">
-                        <span class="w-2 h-2 bg-amber-500 rounded-full"></span> 2. Pengaturan Paket
-                    </h3>
-                    <div id="packageContentPlaceholder" class="flex flex-col items-center justify-center h-full text-center text-slate-700 px-6">
+                    <h3 class="font-black text-indigo-400 mb-8 uppercase text-xs">2. Pengaturan Paket</h3>
+                    <div id="packageContentPlaceholder" class="flex flex-col items-center justify-center h-full text-center text-slate-700">
                         <p class="text-sm italic font-bold">Pilih unit di sebelah kiri.</p>
                     </div>
-                    <div id="packageContentActive" class="hidden">
+                    <div id="packageContentActive" class="hidden text-white">
                         <div id="adminPkgList" class="space-y-2 mb-8"></div>
                         <div class="space-y-3 pt-8 border-t border-slate-800">
                             <input type="text" id="newPkgName" placeholder="Nama Paket" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-sm font-bold text-white outline-none">
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 text-white">
                                 <input type="number" id="newPkgTime" placeholder="Menit" class="w-1/2 bg-slate-900 border border-slate-800 p-4 rounded-2xl text-sm font-bold text-white">
                                 <input type="number" id="newPkgPrice" placeholder="Harga" class="w-1/2 bg-slate-900 border border-slate-800 p-4 rounded-2xl text-sm font-bold text-white">
                             </div>
-                            <button onclick="addPackage()" class="w-full bg-indigo-600 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-500 transition-all text-white">Simpan Paket</button>
+                            <button onclick="addPackage()" class="w-full bg-indigo-600 py-4 rounded-2xl text-xs font-black text-white uppercase text-white">Simpan Paket</button>
                         </div>
                     </div>
                 </div>
-                <!-- Menu -->
                 <div class="glass p-8 rounded-[2rem]">
-                    <h3 class="font-black text-indigo-400 mb-8 uppercase tracking-widest text-xs flex items-center gap-2">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 3. Daftar Menu
-                    </h3>
+                    <h3 class="font-black text-indigo-400 mb-8 uppercase text-xs">3. Daftar Menu</h3>
                     <div id="adminMenuList" class="space-y-2 max-h-[350px] overflow-y-auto mb-8 pr-2"></div>
                     <div class="space-y-3 pt-8 border-t border-slate-800">
                         <input type="text" id="newMenuName" placeholder="Nama Item" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-sm font-bold text-white">
                         <input type="number" id="newMenuPrice" placeholder="Harga" class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-sm font-bold text-white">
-                        <button onclick="addMenu()" class="w-full bg-emerald-600 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-500 transition-all text-white">Tambah Item</button>
+                        <button onclick="addMenu()" class="w-full bg-emerald-600 py-4 rounded-2xl text-xs font-black text-white uppercase">Tambah Item</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Admin View: History -->
-            <div id="admin-history-view" class="hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
-                    <div class="lg:col-span-1 glass p-8 rounded-3xl">
-                        <h3 class="text-indigo-400 font-black text-xs uppercase tracking-widest mb-6">Filter Laporan</h3>
+            <div id="admin-history-view" class="hidden text-white">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10 text-white">
+                    <div class="lg:col-span-1 glass p-8 rounded-3xl text-white">
+                        <h3 class="text-indigo-400 font-black text-xs uppercase mb-6">Filter Laporan</h3>
                         <div class="space-y-2">
-                            <button onclick="setHistoryFilter('daily')" id="f-daily" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all bg-indigo-600 shadow-lg shadow-indigo-600/20 text-white">📅 Hari Ini</button>
+                            <button onclick="setHistoryFilter('daily')" id="f-daily" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all bg-indigo-600 shadow-lg text-white">📅 Hari Ini</button>
                             <button onclick="setHistoryFilter('weekly')" id="f-weekly" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all hover:bg-slate-800 text-slate-400">📅 Minggu Ini</button>
                             <button onclick="setHistoryFilter('monthly')" id="f-monthly" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all hover:bg-slate-800 text-slate-400">📅 Bulan Ini</button>
                             <button onclick="setHistoryFilter('yearly')" id="f-yearly" class="w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all hover:bg-slate-800 text-slate-400">📅 Tahun Ini</button>
                         </div>
                     </div>
-                    <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-slate-900 p-8 rounded-[2rem] border border-slate-800">
-                            <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-2">Total Transaksi</p>
-                            <h3 id="hist-count" class="text-4xl font-black text-white">0</h3>
-                        </div>
-                        <div class="bg-indigo-900/10 p-8 rounded-[2rem] border border-indigo-900/20">
-                            <p class="text-[10px] text-indigo-400 uppercase font-black tracking-widest mb-2">Pemasukan Sewa</p>
-                            <h3 id="hist-play-total" class="text-3xl font-black text-indigo-400">Rp 0</h3>
-                        </div>
-                        <div class="bg-emerald-900/10 p-8 rounded-[2rem] border border-emerald-900/20">
-                            <p class="text-[10px] text-emerald-400 uppercase font-black tracking-widest mb-2">Pemasukan Menu</p>
-                            <h3 id="hist-menu-total" class="text-3xl font-black text-emerald-400">Rp 0</h3>
-                        </div>
+                    <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 text-white text-white">
+                        <div class="bg-slate-900 p-8 rounded-[2rem] border border-slate-800"><p class="text-[10px] text-slate-500 uppercase font-black mb-2">Total Transaksi</p><h3 id="hist-count" class="text-4xl font-black text-white text-white">0</h3></div>
+                        <div class="bg-indigo-900/10 p-8 rounded-[2rem] border border-indigo-900/20 text-white text-white"><p class="text-[10px] text-indigo-400 uppercase font-black mb-2 text-white">Sewa Unit</p><h3 id="hist-play-total" class="text-3xl font-black text-indigo-400 text-white">Rp 0</h3></div>
+                        <div class="bg-emerald-900/10 p-8 rounded-[2rem] border border-emerald-900/20 text-white text-white"><p class="text-[10px] text-emerald-400 uppercase font-black mb-2 text-white">Penjualan Menu</p><h3 id="hist-menu-total" class="text-3xl font-black text-emerald-400 text-white">Rp 0</h3></div>
                     </div>
                 </div>
                 <div class="glass overflow-hidden rounded-[2rem]">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-900 text-slate-500 uppercase text-[9px] tracking-widest font-black">
-                                <tr>
-                                    <th class="px-8 py-6">Waktu / Tanggal</th>
-                                    <th class="px-8 py-6">Customer / Unit</th>
-                                    <th class="px-8 py-6">Rincian</th>
-                                    <th class="px-8 py-6 text-right">Aksi</th>
-                                </tr>
+                        <table class="w-full text-left text-sm text-white">
+                            <thead class="bg-slate-900 text-slate-500 uppercase text-[9px] font-black">
+                                <tr><th class="px-8 py-6">Waktu / Tanggal</th><th class="px-8 py-6">Customer / Unit</th><th class="px-8 py-6">Rincian</th><th class="px-8 py-6 text-right text-white">Aksi</th></tr>
                             </thead>
-                            <tbody id="historyTableBody" class="divide-y divide-slate-800"></tbody>
+                            <tbody id="historyTableBody" class="divide-y divide-slate-800 text-white text-white"></tbody>
                         </table>
                     </div>
-                    <div id="noDataMsg" class="hidden text-center py-20"><p class="text-slate-600 font-bold uppercase text-xs tracking-widest">Data Kosong</p></div>
                 </div>
             </div>
 
-            <!-- Admin View: Settings (Edit Account) -->
             <div id="admin-settings-view" class="hidden max-w-md mx-auto">
                 <div class="glass p-8 rounded-[2.5rem]">
-                    <div class="text-center mb-8">
-                        <div class="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mx-auto mb-4 text-amber-500">⚙️</div>
-                        <h3 class="text-xl font-black uppercase text-white tracking-tighter">Pengaturan Akun Admin</h3>
-                        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Ubah Kredensial Akses</p>
-                    </div>
+                    <h3 class="text-xl font-black uppercase text-white mb-6">Edit Akun Admin</h3>
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-[10px] text-slate-500 uppercase font-black ml-2 mb-1 block">Username Baru</label>
-                            <input type="text" id="newAdminUser" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-bold text-white outline-none focus:border-amber-500 transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[10px] text-slate-500 uppercase font-black ml-2 mb-1 block">Password Baru</label>
-                            <input type="password" id="newAdminPass" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-bold text-white outline-none focus:border-amber-500 transition-all">
-                        </div>
-                        <div class="pt-4">
-                            <button onclick="updateAdminAccount()" class="w-full bg-amber-600 hover:bg-amber-500 py-4 rounded-2xl font-black transition-all shadow-lg uppercase text-xs tracking-widest text-white">Update Data Admin</button>
-                        </div>
+                        <input type="text" id="newAdminUser" placeholder="Username Baru" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 text-white outline-none">
+                        <input type="password" id="newAdminPass" placeholder="Password Baru" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 text-white outline-none">
+                        <button onclick="updateAdminAccount()" class="w-full bg-amber-600 hover:bg-amber-500 py-4 rounded-2xl font-black text-white uppercase text-xs">Update Akun</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Mulai Sesi -->
-    <div id="startSessionModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <!-- Modals -->
+    <div id="startSessionModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-white">
         <div class="glass w-full max-w-md rounded-3xl p-8 shadow-2xl">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-black tracking-tight text-white">Mulai Sesi Baru</h2>
-                    <p id="startStationName" class="text-indigo-400 text-xs font-bold uppercase tracking-widest mt-1"></p>
+            <h2 class="text-2xl font-black text-white mb-4">Mulai Sesi</h2>
+            <p id="startStationName" class="text-indigo-400 text-xs font-bold uppercase mb-6"></p>
+            <div class="space-y-4">
+                <input type="text" id="custName" placeholder="Nama Lengkap" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-bold text-white outline-none">
+                <input type="tel" id="custWA" placeholder="Nomor WA (0812...)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-bold text-white outline-none">
+                <select id="packageSelect" onchange="togglePriceInput()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-bold text-white outline-none"></select>
+                <div id="openPriceInput" class="hidden">
+                    <input type="number" id="basePrice" value="45000" class="w-full bg-slate-900 border border-indigo-900/50 rounded-xl px-4 py-3 outline-none font-bold text-indigo-300">
                 </div>
-                <button onclick="closeModals()" class="text-slate-600 hover:text-white transition-colors">✕</button>
-            </div>
-            <div class="space-y-5">
-                <div class="space-y-3">
-                    <label class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Identitas Pelanggan</label>
-                    <input type="text" id="custName" placeholder="Nama Lengkap" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none transition-all font-bold text-white">
-                    <input type="tel" id="custWA" placeholder="Nomor WA (Contoh: 0812...)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none transition-all font-bold text-white">
-                </div>
-                <div class="space-y-3">
-                    <label class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pengaturan Paket</label>
-                    <select id="packageSelect" onchange="togglePriceInput()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 focus:border-indigo-500 outline-none font-bold text-white">
-                    </select>
-                    <div id="openPriceInput" class="hidden pt-2">
-                        <label class="text-[9px] text-indigo-400 uppercase font-bold ml-1">Tarif Per Jam (Rp)</label>
-                        <input type="number" id="basePrice" value="45000" class="w-full bg-slate-900 border border-indigo-900/50 rounded-xl px-4 py-3 mt-1 outline-none font-mono font-bold text-indigo-300">
-                    </div>
-                </div>
-                <div class="pt-4 flex gap-3">
-                    <button onclick="confirmStart()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black transition-all shadow-lg shadow-indigo-600/30 uppercase text-[11px] tracking-wider text-white">Buka Billing</button>
-                </div>
+                <button onclick="confirmStart()" class="w-full bg-indigo-600 py-4 rounded-2xl font-black text-white uppercase">Buka Billing</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Pesan Menu -->
-    <div id="orderMenuModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="glass w-full max-w-4xl rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col max-h-[85vh]">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-black text-white">Tambah Pesanan</h2>
-                    <p id="orderStationName" class="text-indigo-400 text-xs font-bold uppercase tracking-widest mt-1"></p>
-                </div>
-                <button onclick="closeModals()" class="bg-slate-800/50 w-8 h-8 rounded-full flex items-center justify-center hover:text-white transition-colors text-white">✕</button>
-            </div>
+    <div id="orderMenuModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-white">
+        <div class="glass w-full max-w-4xl rounded-3xl p-8 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-start mb-6 text-white"><h2 class="text-2xl font-black text-white">Tambah Pesanan</h2><button onclick="closeModals()" class="text-slate-500">✕</button></div>
             <div class="grid grid-cols-1 md:grid-cols-5 gap-8 overflow-hidden">
-                <div class="md:col-span-3 flex flex-col h-full overflow-hidden border-r border-slate-800/50 pr-4">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Daftar Menu</h3>
-                    <div id="menuSelectionList" class="flex-1 overflow-y-auto space-y-2"></div>
-                </div>
-                <div class="md:col-span-2 flex flex-col h-full overflow-hidden">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Pesanan Terpilih</h3>
-                    <div id="currentStationOrderList" class="flex-1 overflow-y-auto space-y-2 mb-4"></div>
-                    <div class="p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl mt-auto">
-                        <p class="text-[9px] text-slate-500 uppercase font-black mb-1">Subtotal Menu</p>
-                        <h4 id="tempMenuTotal" class="text-3xl font-black text-emerald-400 tracking-tighter">Rp 0</h4>
-                    </div>
+                <div class="md:col-span-3 overflow-y-auto pr-4 border-r border-slate-800/50 text-white"><div id="menuSelectionList" class="space-y-2"></div></div>
+                <div class="md:col-span-2 flex flex-col h-full overflow-hidden text-white text-white text-white">
+                    <div id="currentStationOrderList" class="flex-1 overflow-y-auto space-y-2 mb-4 text-white"></div>
+                    <div class="p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl text-white text-white"><p class="text-[9px] text-slate-500 uppercase font-black mb-1">Subtotal Menu</p><h4 id="tempMenuTotal" class="text-3xl font-black text-emerald-400">Rp 0</h4></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Checkout & Detail View (Higher Z-index for Admin usage) -->
-    <div id="checkoutModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-        <div class="glass w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
-            <div class="bg-indigo-600 px-8 py-6 flex justify-between items-center">
-                <h2 id="modalTitle" class="text-xl font-black tracking-tight uppercase text-white">Ringkasan Tagihan</h2>
-                <button onclick="closeModals()" class="text-white/50 hover:text-white">✕</button>
-            </div>
-            <div class="p-8 space-y-6 max-h-[75vh] overflow-y-auto">
-                <div id="printArea" class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
-                    <div class="flex justify-between items-start border-b border-slate-800 pb-6 mb-6">
-                        <div>
-                            <h3 id="checkStationName" class="text-2xl font-black text-white">Meja 1</h3>
-                            <p id="checkCustName" class="text-indigo-400 font-black tracking-tight">CUSTOMER NAME</p>
-                            <p id="checkWA" class="text-[10px] text-slate-500 font-mono"></p>
-                        </div>
-                        <div class="text-right">
-                            <p id="checkDuration" class="font-mono text-2xl font-black text-white">00:00:00</p>
-                            <p id="checkTimeRange" class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">JAM BERMAIN</p>
-                        </div>
+    <div id="checkoutModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4 text-white">
+        <div class="glass w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl text-white">
+            <div class="bg-indigo-600 px-8 py-6 flex justify-between items-center text-white"><h2 id="modalTitle" class="text-xl font-black uppercase">Ringkasan Tagihan</h2><button onclick="closeModals()" class="text-white/50">✕</button></div>
+            <div class="p-8 space-y-6 max-h-[75vh] overflow-y-auto text-white">
+                <div class="bg-slate-900/40 p-6 rounded-2xl border border-slate-800 text-white text-white">
+                    <div class="flex justify-between items-start border-b border-slate-800 pb-4 mb-4 text-white">
+                        <div><h3 id="checkStationName" class="text-xl font-black text-white">Meja 1</h3><p id="checkCustName" class="text-indigo-400 font-black uppercase">CUSTOMER</p></div>
+                        <div class="text-right text-white"><p id="checkDuration" class="font-mono text-xl font-black text-white">00:00:00</p></div>
                     </div>
-                    <div class="space-y-4">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-400 font-bold tracking-widest uppercase text-[10px]">Sewa (<span id="checkPkgName" class="text-slate-300">...</span>)</span>
-                            <span id="checkPlayCost" class="font-black text-white">Rp 0</span>
-                        </div>
-                        <div id="checkMenuList" class="space-y-2 pt-2 border-t border-slate-800/50"></div>
+                    <div id="checkMenuList" class="space-y-2 text-[11px] mb-4 text-white text-white"></div>
+                    <div class="flex justify-between font-black text-xl text-emerald-400 border-t border-slate-800 pt-4 text-white"><span>TOTAL</span> <span id="checkGrandTotal">Rp 0</span></div>
+                </div>
+                <div id="paymentSection" class="space-y-4 text-white">
+                    <div class="grid grid-cols-2 gap-2 text-white">
+                        <button onclick="selectPayment('Tunai')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-black bg-slate-900 text-white" id="payTunai">Tunai</button>
+                        <button onclick="selectPayment('QRIS')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-black bg-slate-900 text-white" id="payQRIS">QRIS</button>
+                        <button onclick="selectPayment('GoPay')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-black bg-slate-900 text-white" id="payGoPay">GoPay</button>
+                        <button onclick="selectPayment('Dana')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-black bg-slate-900 text-white" id="payDana">Dana</button>
                     </div>
-                    <div class="bg-indigo-600/10 p-6 rounded-3xl flex justify-between items-center border border-indigo-500/20 my-6">
-                        <span class="font-black text-lg text-slate-300 uppercase tracking-widest">Total Bayar</span>
-                        <span id="checkGrandTotal" class="text-4xl font-black text-emerald-400 tracking-tighter">Rp 0</span>
+                    <div id="cashInputGroup" class="grid grid-cols-2 gap-4 text-white">
+                        <div><label class="text-[9px] text-slate-500 uppercase font-black text-white">Bayar</label><input type="number" id="cashPaid" oninput="calculateChange()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-xl text-white outline-none focus:border-emerald-500"></div>
+                        <div><label class="text-[9px] text-slate-500 uppercase font-black text-white">Kembali</label><div id="cashChange" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-xl text-emerald-500 text-white">0</div></div>
                     </div>
                 </div>
-
-                <div id="paymentSection" class="space-y-6">
-                    <div class="space-y-3">
-                        <label class="text-[10px] text-slate-400 uppercase font-black tracking-widest block">Metode Pembayaran</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="selectPayment('Tunai')" class="payment-btn border border-slate-800 p-4 rounded-2xl text-[10px] font-black tracking-widest bg-slate-900/50 uppercase text-white" id="payTunai">💵 Tunai</button>
-                            <button onclick="selectPayment('QRIS')" class="payment-btn border border-slate-800 p-4 rounded-2xl text-[10px] font-black tracking-widest bg-slate-900/50 uppercase text-white" id="payQRIS">📱 QRIS</button>
-                            <button onclick="selectPayment('GoPay')" class="payment-btn border border-slate-800 p-4 rounded-2xl text-[10px] font-black tracking-widest bg-slate-900/50 uppercase text-white" id="payGoPay">🌀 GoPay</button>
-                            <button onclick="selectPayment('Dana')" class="payment-btn border border-slate-800 p-4 rounded-2xl text-[10px] font-black tracking-widest bg-slate-900/50 uppercase text-white" id="payDana">💎 Dana</button>
-                        </div>
-                    </div>
-                    <div id="cashInputGroup" class="space-y-4 pt-2">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[9px] text-slate-500 uppercase mb-2 block font-black">Nominal Uang</label>
-                                <input type="number" id="cashPaid" oninput="calculateChange()" class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-4 outline-none focus:border-emerald-500 font-mono text-2xl font-black text-white">
-                            </div>
-                            <div>
-                                <label class="text-[9px] text-slate-500 uppercase mb-2 block font-black">Kembalian</label>
-                                <div id="cashChange" class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-4 font-mono text-2xl font-black text-emerald-500 flex items-center">0</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="actionButtons" class="pt-6 flex flex-col gap-3">
-                    <button id="mainActionBtn" onclick="processPayment()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-5 rounded-3xl font-black text-lg transition-all shadow-lg shadow-emerald-600/20 uppercase tracking-tighter text-white">Selesaikan Transaksi</button>
-                    <div id="historyActionButtons" class="hidden grid grid-cols-2 gap-3">
-                        <button onclick="printReceipt()" class="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white">Cetak (PDF)</button>
-                        <button onclick="shareWAFromHistory()" class="bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white">Share WA</button>
+                <div id="actionButtons" class="pt-4 flex flex-col gap-3 text-white">
+                    <button id="mainActionBtn" onclick="processPayment()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-5 rounded-3xl font-black text-white text-lg uppercase text-white">Selesaikan & Share WA</button>
+                    <div id="historyActionButtons" class="hidden grid grid-cols-2 gap-3 text-white">
+                        <button onclick="printReceipt()" class="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black text-white uppercase text-[10px]">Cetak PDF</button>
+                        <button onclick="shareWAFromHistory()" class="bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black text-white uppercase text-[10px]">Share WA</button>
                     </div>
                 </div>
             </div>
@@ -346,461 +387,204 @@
 
     <script>
         // --- State Management ---
-        let currentAdminTab = 'units';
-        let historyFilter = 'daily';
-        
-        let stations = JSON.parse(localStorage.getItem('stations')) || [
-            { id: 1, name: 'Meja 1', type: 'billiard', status: 'idle', orders: [] },
-            { id: 2, name: 'Meja 2', type: 'billiard', status: 'idle', orders: [] }
-        ];
-
-        let packages = JSON.parse(localStorage.getItem('packages')) || [
-            { id: 'open', name: 'Open (Per Menit)', type: 'open', price: 45000, stationId: 'all' }
-        ];
-
-        let menus = JSON.parse(localStorage.getItem('menus')) || [
-            { id: 1, name: 'Es Teh Manis', price: 5000 },
-            { id: 2, name: 'Kentang Goreng', price: 15000 }
-        ];
-
-        let adminAuth = JSON.parse(localStorage.getItem('adminAuth')) || {
-            user: 'admin',
-            pass: 'admin123'
-        };
-
+        let currentAdminTab = 'units', historyFilter = 'daily';
+        let stations = JSON.parse(localStorage.getItem('stations')) || [{ id: 1, name: 'Meja 1', type: 'billiard', status: 'idle', orders: [] }];
+        let packages = JSON.parse(localStorage.getItem('packages')) || [{ id: 'open', name: 'Open Billing', type: 'open', price: 45000, stationId: 'all' }];
+        let menus = JSON.parse(localStorage.getItem('menus')) || [{ id: 1, name: 'Es Teh Manis', price: 5000 }];
+        let adminAuth = JSON.parse(localStorage.getItem('adminAuth')) || { user: 'admin', pass: 'admin123' };
         let transactionHistory = JSON.parse(localStorage.getItem('transactionHistory')) || [];
-
-        let activeSessions = {};
-        let selectedId = null; 
-        let adminSelectedStationId = null;
-        let selectedPaymentMethod = 'Tunai';
-        let currentHistoryTx = null;
+        let activeSessions = {}, selectedId = null, adminSelectedStationId = null, selectedPaymentMethod = 'Tunai', currentHistoryTx = null;
         let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const fullAddress = "Jalan St Stephanus Martir Pamatang Raya, Bahapal Raya, Kec. Raya, Kabupaten Simalungun, Sumatera Utara 21162";
+
+        // --- PWA Logic ---
+        const manifest = { "name": "Elite Pro Manager", "short_name": "ElitePro", "start_url": ".", "display": "standalone", "background_color": "#020617", "theme_color": "#6366f1", "icons": [{"src": "https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj", "sizes": "192x192", "type": "image/png"}, {"src": "https://lh3.googleusercontent.com/d/1NVYYPaVRGsFGRUZJW2jJtPuihMyjr0gj", "sizes": "512x512", "type": "image/png"}] };
+        document.querySelector('#pwa-manifest').setAttribute('href', URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'})));
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register(URL.createObjectURL(new Blob([`self.addEventListener('fetch', function(e) {});`], {type: 'application/javascript'}))).catch(() => {}); }); }
 
         // --- Clock ---
         function updateClock() {
             const now = new Date();
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('clockDate').innerText = now.toLocaleDateString('id-ID', dateOptions);
+            document.getElementById('clockDate').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('clockTime').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
-        setInterval(updateClock, 1000);
-        updateClock();
+        setInterval(updateClock, 1000); updateClock();
 
-        // --- Auth Logic ---
-        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-        function handleLogin() {
-            const u = document.getElementById('loginUser').value;
-            const p = document.getElementById('loginPass').value;
-            if (u === adminAuth.user && p === adminAuth.pass) {
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('adminPanelModal').classList.remove('hidden');
-                document.getElementById('loginUser').value = '';
-                document.getElementById('loginPass').value = '';
-                switchAdminTab('units');
-            } else {
-                alert("Username atau Password Salah!");
+        // --- Cinematic Opening Screen Auto Transition ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Memberikan waktu 3.5 detik untuk animasi loading sebelum masuk
+            setTimeout(closeOpening, 3500);
+        });
+
+        function closeOpening() {
+            const screen = document.getElementById('opening-screen');
+            if (screen) {
+                screen.style.opacity = '0';
+                setTimeout(() => {
+                    screen.style.visibility = 'hidden';
+                    renderStations(); // Memuat dashboard setelah transisi selesai
+                }, 1200);
             }
         }
 
+        // --- Auth ---
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function handleLogin() {
+            if (document.getElementById('loginUser').value === adminAuth.user && document.getElementById('loginPass').value === adminAuth.pass) {
+                document.getElementById('loginModal').classList.add('hidden'); document.getElementById('adminPanelModal').classList.remove('hidden'); switchAdminTab('units');
+            } else alert("Akses Ditolak!");
+        }
         function updateAdminAccount() {
-            const newUser = document.getElementById('newAdminUser').value;
-            const newPass = document.getElementById('newAdminPass').value;
-            if(!newUser || !newPass) { alert("Semua kolom harus diisi!"); return; }
-            adminAuth.user = newUser;
-            adminAuth.pass = newPass;
-            localStorage.setItem('adminAuth', JSON.stringify(adminAuth));
-            alert("Data Akun Admin Berhasil Diperbarui!");
-            document.getElementById('newAdminUser').value = '';
-            document.getElementById('newAdminPass').value = '';
+            const u = document.getElementById('newAdminUser').value, p = document.getElementById('newAdminPass').value;
+            if(u && p) { adminAuth = { user: u, pass: p }; localStorage.setItem('adminAuth', JSON.stringify(adminAuth)); alert("Akun Diperbarui!"); }
         }
 
-        // --- Navigation ---
+        // --- Tabs ---
         function switchAdminTab(tab) {
-            currentAdminTab = tab;
-            document.getElementById('admin-units-view').classList.toggle('hidden', tab !== 'units');
-            document.getElementById('admin-history-view').classList.toggle('hidden', tab !== 'history');
-            document.getElementById('admin-settings-view').classList.toggle('hidden', tab !== 'settings');
-            ['units', 'history', 'settings'].forEach(t => document.getElementById('at-' + t).classList.toggle('active', tab === t));
+            ['units', 'history', 'settings'].forEach(t => { 
+                const el = document.getElementById('admin-' + t + '-view');
+                const btn = document.getElementById('at-' + t);
+                if(el) el.classList.toggle('hidden', tab !== t); 
+                if(btn) btn.classList.toggle('active', tab === t);
+            });
             if (tab === 'history') renderHistory();
             if (tab === 'units') { renderAdminStations(); renderAdminMenu(); }
         }
 
-        // --- Core Rendering ---
+        // --- Logic Dasar ---
         function renderStations() {
-            const grid = document.getElementById('stationsGrid');
-            if (!grid) return;
-            grid.innerHTML = '';
+            const grid = document.getElementById('stationsGrid'); if (!grid) return; grid.innerHTML = '';
             stations.forEach(s => {
-                const isActive = s.status === 'active';
-                const isExpired = s.status === 'expired';
-                let cardClass = isActive ? 'card-active' : 'card-idle border-slate-800/50';
-                if(isExpired) cardClass = 'card-expired';
-                const totalMenuCost = s.orders ? s.orders.reduce((acc, curr) => acc + curr.price, 0) : 0;
-                grid.innerHTML += `
-                    <div class="glass p-7 rounded-[2.5rem] transition-all duration-300 ${cardClass}">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 class="text-xl font-black tracking-tight text-white">${s.name}</h3>
-                                <span class="text-[9px] uppercase font-black px-2.5 py-1 bg-indigo-900/40 text-indigo-400 rounded-lg tracking-widest border border-indigo-500/10">${s.type}</span>
-                            </div>
-                            <span class="text-[10px] font-black tracking-widest ${isActive ? 'text-emerald-400' : 'text-slate-700'}">${isActive ? '● AKTIF' : '○ IDLE'}</span>
-                        </div>
-                        <p class="text-[10px] font-black mb-4 truncate text-slate-500 uppercase tracking-widest border-b border-slate-800/30 pb-3">${isActive || isExpired ? '👤 ' + s.customerName : 'SIAP DIGUNAKAN'}</p>
-                        <div id="timer-${s.id}" class="text-5xl font-mono font-black text-center py-6 text-white tracking-tighter">00:00:00</div>
-                        <div class="grid grid-cols-2 gap-4 mb-8 pt-4">
-                            <div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800/50">
-                                <p class="text-[8px] text-slate-600 font-black uppercase mb-1 tracking-widest">Sewa</p>
-                                <p id="liveCost-${s.id}" class="text-xs font-black text-indigo-400">Rp 0</p>
-                            </div>
-                            <div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800/50">
-                                <p class="text-[8px] text-slate-600 font-black uppercase mb-1 tracking-widest">Menu</p>
-                                <p class="text-xs font-black text-emerald-400">Rp ${totalMenuCost.toLocaleString()}</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            ${isActive || isExpired ? 
-                                `<button onclick="openOrderModal(${s.id})" class="bg-slate-800 p-4 rounded-2xl transition-all hover:bg-indigo-600 group shadow-lg text-white">🍽️</button>
-                                 <button onclick="prepareCheckout(${s.id})" class="flex-1 bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white py-4 rounded-2xl font-black transition-all uppercase text-[10px] tracking-widest">Selesaikan Sesi</button>` :
-                                `<button onclick="openStartModal(${s.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black transition-all shadow-xl shadow-indigo-600/20 uppercase text-[10px] tracking-widest text-white">Mulai Bermain</button>`
-                            }
-                        </div>
-                    </div>
-                `;
+                const isActive = s.status === 'active', isExpired = s.status === 'expired';
+                let cardClass = isActive ? 'card-active' : 'card-idle border-slate-800/50'; if(isExpired) cardClass = 'card-expired';
+                const menuCost = s.orders ? s.orders.reduce((a, c) => a + c.price, 0) : 0;
+                grid.innerHTML += `<div class="glass p-7 rounded-[2.5rem] transition-all duration-300 ${cardClass}">
+                    <div class="flex justify-between items-start mb-2"><div><h3 class="text-xl font-black text-white">${s.name}</h3><span class="text-[9px] uppercase font-black px-2 py-1 bg-indigo-900/40 text-indigo-400 rounded-lg border border-indigo-500/10">${s.type}</span></div><span class="text-[10px] font-black ${isActive ? 'text-emerald-400' : 'text-slate-700'}">${isActive ? '● AKTIF' : '○ IDLE'}</span></div>
+                    <p class="text-[10px] font-black mb-4 truncate text-slate-500 uppercase tracking-widest border-b border-slate-800/30 pb-3">${isActive || isExpired ? '👤 ' + s.customerName : 'SIAP DIGUNAKAN'}</p>
+                    <div id="timer-${s.id}" class="text-5xl font-mono font-black text-center py-6 text-white">00:00:00</div>
+                    <div class="grid grid-cols-2 gap-4 mb-8 pt-4 text-white"><div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800/50"><p class="text-[8px] text-slate-600 font-black uppercase mb-1">Sewa</p><p id="liveCost-${s.id}" class="text-xs font-black text-indigo-400">Rp 0</p></div><div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800/50"><p class="text-[8px] text-slate-600 font-black uppercase mb-1">Menu</p><p class="text-xs font-black text-emerald-400">Rp ${menuCost.toLocaleString()}</p></div></div>
+                    <div class="flex gap-2">${isActive || isExpired ? `<button onclick="openOrderModal(${s.id})" class="bg-slate-800 p-4 rounded-2xl text-white">🍽️</button><button onclick="prepareCheckout(${s.id})" class="flex-1 bg-red-600/10 text-red-500 border border-red-500/20 py-4 rounded-2xl font-black uppercase text-[10px]">Selesaikan Sesi</button>` : `<button onclick="openStartModal(${s.id})" class="flex-1 bg-indigo-600 py-4 rounded-2xl font-black text-white uppercase text-[10px]">Mulai Bermain</button>`}</div></div>`;
                 if(isActive || isExpired) startTimerLoop(s);
             });
         }
 
-        // --- Timer Loop ---
         function startTimerLoop(s) {
             if (activeSessions[s.id]) clearInterval(activeSessions[s.id]);
             activeSessions[s.id] = setInterval(() => {
-                const now = new Date().getTime();
-                let diff, display, playCost = 0;
+                const now = new Date().getTime(); let diff, playCost = 0;
                 if (s.pkgType === 'timed') {
-                    diff = s.endTime - now;
-                    if (diff <= 0) { diff = 0; handleExpired(s); }
-                    display = formatTime(diff);
-                    playCost = s.pkgPrice || 0;
+                    diff = s.endTime - now; if (diff <= 0) { diff = 0; if(s.status !== 'expired') { s.status = 'expired'; playAlarm(); renderStations(); } }
+                    playCost = s.pkgPrice;
                 } else {
-                    diff = now - s.startTime;
-                    display = formatTime(diff);
-                    playCost = Math.ceil((diff / 60000) * (s.basePrice / 60));
+                    diff = now - s.startTime; playCost = Math.ceil((diff / 60000) * (s.basePrice / 60));
                 }
-                const timerEl = document.getElementById(`timer-${s.id}`);
-                const costEl = document.getElementById(`liveCost-${s.id}`);
-                if (timerEl) timerEl.innerText = display;
-                if (costEl) costEl.innerText = `Rp ${playCost.toLocaleString()}`;
+                const tEl = document.getElementById(`timer-${s.id}`), cEl = document.getElementById(`liveCost-${s.id}`);
+                if (tEl) tEl.innerText = formatTime(diff); if (cEl) cEl.innerText = `Rp ${playCost.toLocaleString()}`;
             }, 1000);
         }
 
-        function handleExpired(s) {
-            if (s.status === 'active') { s.status = 'expired'; saveData(); renderStations(); playAlarm(); }
-        }
+        function playAlarm() { const osc = audioCtx.createOscillator(); const g = audioCtx.createGain(); osc.type='square'; osc.frequency.setValueAtTime(660, audioCtx.currentTime); osc.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); setTimeout(()=>osc.stop(), 2500); }
 
-        // --- Ordering ---
         function openOrderModal(id) {
-            selectedId = id;
-            const s = stations.find(x => x.id === id);
-            document.getElementById('orderStationName').innerText = `${s.name} - ${s.customerName}`;
-            const list = document.getElementById('menuSelectionList');
-            list.innerHTML = menus.map(m => `
-                <div class="flex justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/50 transition-all group">
-                    <div>
-                        <p class="font-black text-sm tracking-tight text-slate-200">${m.name}</p>
-                        <p class="text-[10px] text-emerald-400 font-black tracking-widest uppercase">Rp ${m.price.toLocaleString()}</p>
-                    </div>
-                    <button onclick="addOrderToStation(${m.id})" class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all uppercase text-white">Pilih</button>
-                </div>
-            `).join('');
-            renderCurrentOrders(s);
-            document.getElementById('orderMenuModal').classList.remove('hidden');
+            selectedId = id; const s = stations.find(x => x.id === id); document.getElementById('orderStationName').innerText = `${s.name} - ${s.customerName}`;
+            document.getElementById('menuSelectionList').innerHTML = menus.map(m => `<div class="flex justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800 text-white"><div><p class="font-black text-sm">${m.name}</p><p class="text-[10px] text-emerald-400 font-black">Rp ${m.price.toLocaleString()}</p></div><button onclick="addOrder(${m.id})" class="bg-indigo-600 px-5 py-2 rounded-xl text-[10px] font-black uppercase text-white">Pilih</button></div>`).join('');
+            renderCurrentOrders(s); document.getElementById('orderMenuModal').classList.remove('hidden');
         }
 
-        function renderCurrentOrders(s) {
-            const currentList = document.getElementById('currentStationOrderList');
-            const totalEl = document.getElementById('tempMenuTotal');
-            let total = 0;
-            if (!s.orders || s.orders.length === 0) {
-                currentList.innerHTML = '<div class="text-center py-12 text-[10px] font-bold text-slate-600 uppercase italic">Keranjang Kosong</div>';
-                totalEl.innerText = 'Rp 0';
-                return;
-            }
-            currentList.innerHTML = s.orders.map((o, index) => {
-                total += o.price;
-                return `
-                    <div class="flex justify-between items-center bg-indigo-900/10 p-4 rounded-2xl border border-indigo-500/10">
-                        <div class="flex-1">
-                            <p class="text-xs font-black tracking-tight text-indigo-300">${o.name}</p>
-                            <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">${o.time}</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="text-xs font-black text-white font-mono">Rp ${o.price.toLocaleString()}</span>
-                            <button onclick="removeOrderFromStation(${index})" class="text-red-500">✕</button>
-                        </div>
-                    </div>`;
-            }).join('');
-            totalEl.innerText = `Rp ${total.toLocaleString()}`;
+        function addOrder(mId) { const s = stations.find(x => x.id === selectedId), m = menus.find(x => x.id === mId); s.orders.push({...m, time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}); saveData(); renderCurrentOrders(s); renderStations(); }
+        function removeOrder(idx) { const s = stations.find(x => x.id === selectedId); s.orders.splice(idx, 1); saveData(); renderCurrentOrders(s); renderStations(); }
+        function renderCurrentOrders(s) { 
+            let total = 0; const list = document.getElementById('currentStationOrderList');
+            list.innerHTML = s.orders.map((o, i) => { total += o.price; return `<div class="flex justify-between items-center bg-indigo-900/10 p-4 rounded-2xl border border-indigo-500/10 text-white"><div class="flex-1"><p class="text-xs font-black text-indigo-300">${o.name}</p><p class="text-[9px] text-slate-500 uppercase">${o.time}</p></div><div class="flex items-center gap-4 text-white"><span class="text-xs font-black text-white">Rp ${o.price.toLocaleString()}</span><button onclick="removeOrder(${i})" class="text-red-500">✕</button></div></div>` }).join('');
+            document.getElementById('tempMenuTotal').innerText = `Rp ${total.toLocaleString()}`;
         }
 
-        function addOrderToStation(menuId) {
-            const s = stations.find(x => x.id === selectedId);
-            const menu = menus.find(m => m.id === menuId);
-            if (!s.orders) s.orders = [];
-            s.orders.push({ ...menu, time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) });
-            saveData(); renderCurrentOrders(s); renderStations();
-        }
-
-        function removeOrderFromStation(index) {
-            const s = stations.find(x => x.id === selectedId);
-            s.orders.splice(index, 1);
-            saveData(); renderCurrentOrders(s); renderStations();
-        }
-
-        // --- Checkout & Detail View (CRITICAL FIX FOR Z-INDEX) ---
         function prepareCheckout(id) {
-            selectedId = id;
-            const s = stations.find(x => x.id === id);
-            const now = new Date().getTime();
-            let durationMs = now - s.startTime;
-            if(s.pkgType === 'timed' && now > s.endTime) durationMs = s.endTime - s.startTime;
-            const playCost = s.pkgType === 'timed' ? s.pkgPrice : Math.ceil((durationMs / 60000) * (s.basePrice / 60));
-            const menuCost = s.orders ? s.orders.reduce((acc, curr) => acc + curr.price, 0) : 0;
-            const grandTotal = playCost + menuCost;
-            fillCheckoutModal({
-                stationName: s.name, customerName: s.customerName, wa: s.wa, duration: formatTime(durationMs),
-                startTime: s.startTime, endTime: now, pkgName: s.pkgType === 'timed' ? s.pkgName : 'Open Billing',
-                playCost: playCost, grandTotal: grandTotal, items: s.orders || []
-            }, 'checkout');
+            selectedId = id; const s = stations.find(x => x.id === id); const now = new Date().getTime();
+            let dur = now - s.startTime; if(s.pkgType === 'timed' && now > s.endTime) dur = s.endTime - s.startTime;
+            const pCost = s.pkgType === 'timed' ? s.pkgPrice : Math.ceil((dur / 60000) * (s.basePrice / 60));
+            const mCost = s.orders.reduce((a, c) => a + c.price, 0);
+            fillCheckout({ stationName: s.name, customerName: s.customerName, wa: s.wa, duration: formatTime(dur), startTime: s.startTime, endTime: now, playCost: pCost, total: pCost + mCost, method: 'Tunai', items: s.orders, pkgName: s.pkgType === 'timed' ? s.pkgName : 'Open Billing' }, 'checkout');
         }
 
-        function showHistoryDetail(txId) {
-            const tx = transactionHistory.find(t => t.id === txId);
-            if (!tx) return;
-            currentHistoryTx = tx;
-            fillCheckoutModal({
-                stationName: tx.stationName, customerName: tx.customerName, wa: tx.wa, duration: tx.duration,
-                startTime: tx.startTime || tx.timestamp, endTime: tx.timestamp,
-                pkgName: tx.pkgName || 'Sewa Unit', playCost: tx.playCost, grandTotal: tx.total, items: tx.items || []
-            }, 'history');
-        }
+        function showHistoryDetail(txId) { const tx = transactionHistory.find(t => t.id === txId); currentHistoryTx = tx; fillCheckout(tx, 'history'); }
 
-        function fillCheckoutModal(data, mode) {
+        function fillCheckout(data, mode) {
             document.getElementById('modalTitle').innerText = mode === 'history' ? 'Detail Transaksi' : 'Ringkasan Tagihan';
-            document.getElementById('checkStationName').innerText = data.stationName;
-            document.getElementById('checkCustName').innerText = data.customerName;
-            document.getElementById('checkWA').innerText = data.wa ? `WA: ${data.wa}` : '';
-            document.getElementById('checkDuration').innerText = data.duration;
-            document.getElementById('checkTimeRange').innerText = `${new Date(data.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(data.endTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
-            document.getElementById('checkPkgName').innerText = data.pkgName;
-            document.getElementById('checkPlayCost').innerText = `Rp ${data.playCost.toLocaleString()}`;
-            document.getElementById('checkGrandTotal').innerText = `Rp ${data.grandTotal.toLocaleString()}`;
-            document.getElementById('checkMenuList').innerHTML = data.items.map(o => `<div class="flex justify-between text-[11px] py-0.5"><span class="text-slate-500 uppercase font-black">• ${o.name}</span><span class="font-black text-white">Rp ${o.price.toLocaleString()}</span></div>`).join('');
-            
-            if (mode === 'history') {
-                document.getElementById('paymentSection').classList.add('hidden');
-                document.getElementById('mainActionBtn').classList.add('hidden');
-                document.getElementById('historyActionButtons').classList.remove('hidden');
-            } else {
-                document.getElementById('paymentSection').classList.remove('hidden');
-                document.getElementById('mainActionBtn').classList.remove('hidden');
-                document.getElementById('historyActionButtons').classList.add('hidden');
-            }
-            document.getElementById('checkoutModal').classList.remove('hidden');
+            document.getElementById('checkStationName').innerText = data.stationName; document.getElementById('checkCustName').innerText = data.customerName; document.getElementById('checkDuration').innerText = data.duration; document.getElementById('checkGrandTotal').innerText = `Rp ${data.total.toLocaleString()}`;
+            document.getElementById('checkMenuList').innerHTML = `<div class="flex justify-between text-slate-400 uppercase font-black tracking-widest text-[9px] mb-2"><span>Sewa (${data.pkgName})</span><span>Rp ${data.playCost.toLocaleString()}</span></div>` + data.items.map(o => `<div class="flex justify-between text-white"><span>• ${o.name}</span><span>Rp ${o.price.toLocaleString()}</span></div>`).join('');
+            document.getElementById('paymentSection').classList.toggle('hidden', mode === 'history'); document.getElementById('mainActionBtn').classList.toggle('hidden', mode === 'history'); document.getElementById('historyActionButtons').classList.toggle('hidden', mode !== 'history'); document.getElementById('checkoutModal').classList.remove('hidden');
         }
 
-        function selectPayment(method) {
-            selectedPaymentMethod = method;
-            document.querySelectorAll('.payment-btn').forEach(btn => {
-                btn.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-400');
-                btn.classList.add('border-slate-800', 'bg-slate-900/50');
-            });
-            document.getElementById(`pay${method}`).classList.add('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-400');
-            document.getElementById('cashInputGroup').classList.toggle('hidden', method !== 'Tunai');
-        }
-
-        function calculateChange() {
-            const total = parseInt(document.getElementById('checkGrandTotal').innerText.replace(/[^0-9]/g, ''));
-            const paid = parseInt(document.getElementById('cashPaid').value) || 0;
-            const change = paid - total;
-            const el = document.getElementById('cashChange');
-            el.innerText = change >= 0 ? `Rp ${change.toLocaleString()}` : "KURANG";
-            el.className = change >= 0 ? "w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-4 font-mono text-2xl font-black text-emerald-500" : "w-full bg-slate-900 border border-red-500/30 rounded-2xl px-4 py-4 font-mono text-2xl font-black text-red-500";
+        function printReceipt() {
+            const data = currentHistoryTx || null; if(!data) return;
+            document.getElementById('print-date').innerText = new Date(data.timestamp).toLocaleString('id-ID');
+            document.getElementById('print-station').innerText = data.stationName; document.getElementById('print-cust').innerText = data.customerName; document.getElementById('print-duration').innerText = data.duration; document.getElementById('print-total').innerText = `Rp ${data.total.toLocaleString()}`; document.getElementById('print-method').innerText = data.method;
+            let htmlItems = `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Sewa Unit (${data.pkgName})</span><span>Rp ${data.playCost.toLocaleString()}</span></div>`;
+            data.items.forEach(it => { htmlItems += `<div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>${it.name}</span><span>Rp ${it.price.toLocaleString()}</span></div>`; });
+            document.getElementById('print-items-list').innerHTML = htmlItems;
+            if(data.method === 'Tunai') {
+                document.getElementById('print-cash-only').style.display = 'block';
+                document.getElementById('print-paid').innerText = `Rp ${parseInt(data.paid || 0).toLocaleString()}`;
+                document.getElementById('print-change').innerText = `Rp ${parseInt(data.change || 0).toLocaleString()}`;
+            } else document.getElementById('print-cash-only').style.display = 'none';
+            window.print();
         }
 
         function processPayment() {
-            const s = stations.find(x => x.id === selectedId);
-            const total = parseInt(document.getElementById('checkGrandTotal').innerText.replace(/[^0-9]/g, ''));
-            const paid = parseInt(document.getElementById('cashPaid').value) || 0;
-            if(selectedPaymentMethod === 'Tunai' && paid < total) { alert("Nominal pembayaran belum mencukupi."); return; }
-            const playCost = parseInt(document.getElementById('checkPlayCost').innerText.replace(/[^0-9]/g, ''));
-            const transaction = {
-                id: Date.now(), timestamp: new Date().getTime(), stationName: s.name, customerName: s.customerName, wa: s.wa,
-                duration: document.getElementById('checkDuration').innerText, playCost: playCost, menuCost: s.orders.reduce((acc, curr) => acc + curr.price, 0),
-                total: total, method: selectedPaymentMethod, items: [...s.orders], startTime: s.startTime, pkgName: s.pkgType === 'timed' ? s.pkgName : 'Open Billing'
-            };
-            transactionHistory.push(transaction);
+            const s = stations.find(x => x.id === selectedId), total = parseInt(document.getElementById('checkGrandTotal').innerText.replace(/\D/g,'')), paid = parseInt(document.getElementById('cashPaid').value || 0);
+            if(selectedPaymentMethod === 'Tunai' && paid < total) return alert("Nominal Kurang!");
+            const tx = { id: Date.now(), timestamp: new Date().getTime(), stationName: s.name, customerName: s.customerName, wa: s.wa, duration: document.getElementById('checkDuration').innerText, playCost: (total - s.orders.reduce((a,c)=>a+c.price,0)), total, method: selectedPaymentMethod, paid, change: (paid - total), items: [...s.orders], pkgName: s.pkgType === 'timed' ? s.pkgName : 'Open Billing' };
+            transactionHistory.push(tx); localStorage.setItem('transactionHistory', JSON.stringify(transactionHistory));
             const itemsTxt = s.orders.map(o => `\n- ${o.name}: Rp ${o.price.toLocaleString()}`).join('');
-            const text = `*ELITE PRO - STRUK DIGITAL*\n---------------------------\nMeja: ${s.name}\nCust: ${s.customerName}\nDurasi: ${transaction.duration}\n---------------------------\nSewa: Rp ${playCost.toLocaleString()}${itemsTxt}\n---------------------------\n*TOTAL: Rp ${total.toLocaleString()}*\nMetode: ${selectedPaymentMethod}\n---------------------------\nTerima kasih!`;
-            clearInterval(activeSessions[s.id]);
-            s.status = 'idle'; s.orders = []; s.customerName = ''; s.wa = '';
-            saveData(); renderStations(); closeModals();
-            localStorage.setItem('transactionHistory', JSON.stringify(transactionHistory));
-            const waNum = transaction.wa ? transaction.wa.replace(/[^0-9]/g, '') : '';
-            if (waNum) window.open(`https://wa.me/${waNum.startsWith('0') ? '62' + waNum.substring(1) : waNum}?text=${encodeURIComponent(text)}`, '_blank');
+            const msg = `*ELITE PRO MANAGER*\n${fullAddress}\n---------------------------\nUnit: ${s.name}\nCust: ${s.customerName}\nDurasi: ${tx.duration}\n---------------------------\nSewa: Rp ${tx.playCost.toLocaleString()}${itemsTxt}\n---------------------------\n*TOTAL: Rp ${total.toLocaleString()}*\nMetode: ${selectedPaymentMethod}\n---------------------------\nTerima Kasih!`;
+            clearInterval(activeSessions[s.id]); s.status = 'idle'; s.orders = []; saveData(); renderStations(); closeModals();
+            if(s.wa) window.open(`https://wa.me/${s.wa.replace(/\D/g,'').startsWith('0')?'62'+s.wa.substring(1):s.wa}?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        function printReceipt() { window.print(); }
         function shareWAFromHistory() {
-            if (!currentHistoryTx) return;
-            const tx = currentHistoryTx;
+            if(!currentHistoryTx) return; const tx = currentHistoryTx;
             const itemsTxt = tx.items.map(o => `\n- ${o.name}: Rp ${o.price.toLocaleString()}`).join('');
-            const text = `*ELITE PRO - STRUK DIGITAL (DUPLIKAT)*\n---------------------------\nMeja: ${tx.stationName}\nCust: ${tx.customerName}\nDurasi: ${tx.duration}\n---------------------------\nSewa: Rp ${tx.playCost.toLocaleString()}${itemsTxt}\n---------------------------\n*TOTAL: Rp ${tx.total.toLocaleString()}*\nMetode: ${tx.method}\n---------------------------\nTerima kasih!`;
-            const waNum = tx.wa ? tx.wa.replace(/[^0-9]/g, '') : '';
-            if (waNum) window.open(`https://wa.me/${waNum.startsWith('0') ? '62' + waNum.substring(1) : waNum}?text=${encodeURIComponent(text)}`, '_blank');
-            else alert("Nomor WA tidak tersimpan.");
+            const msg = `*ELITE PRO MANAGER*\n${fullAddress}\n---------------------------\nMeja: ${tx.stationName}\nCust: ${tx.customerName}\nDurasi: ${tx.duration}\n---------------------------\nSewa: Rp ${tx.playCost.toLocaleString()}${itemsTxt}\n---------------------------\n*TOTAL: Rp ${tx.total.toLocaleString()}*\nMetode: ${tx.method}\n---------------------------\nTerima Kasih!`;
+            if(tx.wa) window.open(`https://wa.me/${tx.wa.replace(/\D/g,'').startsWith('0')?'62'+tx.wa.substring(1):tx.wa}?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        // --- History Logic ---
-        function setHistoryFilter(f) {
-            historyFilter = f;
-            ['daily', 'weekly', 'monthly', 'yearly'].forEach(id => {
-                const btn = document.getElementById('f-'+id);
-                if (btn) btn.className = id === f ? 'w-full text-left px-4 py-3 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'w-full text-left px-4 py-3 rounded-xl text-xs font-bold hover:bg-slate-800 text-slate-400';
-            });
-            renderHistory();
-        }
-
+        // --- Admin & Utils ---
+        function setHistoryFilter(f) { historyFilter = f; renderHistory(); }
         function renderHistory() {
-            const body = document.getElementById('historyTableBody');
-            const emptyMsg = document.getElementById('noDataMsg');
-            const now = new Date();
-            let tp = 0, tm = 0, count = 0;
+            const now = new Date(), body = document.getElementById('historyTableBody');
             const filtered = transactionHistory.filter(tx => {
-                const date = new Date(tx.timestamp);
-                if (historyFilter === 'daily') return date.toDateString() === now.toDateString();
-                if (historyFilter === 'weekly') return (now.getTime() - date.getTime()) <= 7 * 24 * 60 * 60 * 1000;
-                if (historyFilter === 'monthly') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-                if (historyFilter === 'yearly') return date.getFullYear() === now.getFullYear();
+                const d = new Date(tx.timestamp);
+                if (historyFilter === 'daily') return d.toDateString() === now.toDateString();
+                if (historyFilter === 'weekly') return (now - d) <= 7*24*60*60*1000;
+                if (historyFilter === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                 return true;
             }).reverse();
-            if (filtered.length === 0) { body.innerHTML = ''; emptyMsg.classList.remove('hidden'); }
-            else {
-                emptyMsg.classList.add('hidden');
-                body.innerHTML = filtered.map(tx => {
-                    tp += tx.playCost; tm += tx.menuCost; count++;
-                    return `<tr class="hover:bg-slate-900/50 transition-colors group cursor-pointer" onclick="showHistoryDetail(${tx.id})">
-                            <td class="px-8 py-6"><p class="font-black text-xs text-slate-200">${new Date(tx.timestamp).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}</p><p class="text-[9px] text-slate-500 font-black uppercase mt-1">${new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</p></td>
-                            <td class="px-8 py-6"><p class="font-black text-indigo-400 uppercase tracking-tighter">${tx.customerName}</p><p class="text-[9px] text-slate-600 font-black uppercase tracking-widest mt-1">${tx.stationName}</p></td>
-                            <td class="px-8 py-6"><div class="flex items-center gap-2"><span class="text-[9px] font-black bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded tracking-widest uppercase">${tx.duration}</span><p class="text-[9px] text-slate-500 font-bold tracking-widest">Rp${tx.total.toLocaleString()}</p></div></td>
-                            <td class="px-8 py-6 text-right"><button class="bg-indigo-600/20 text-indigo-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Detail</button></td>
-                        </tr>`;
-                }).join('');
-            }
-            document.getElementById('hist-count').innerText = count;
-            document.getElementById('hist-play-total').innerText = `Rp ${tp.toLocaleString()}`;
-            document.getElementById('hist-menu-total').innerText = `Rp ${tm.toLocaleString()}`;
+            let tp=0, tm=0;
+            body.innerHTML = filtered.map(tx => {
+                tp += tx.playCost; tm += tx.items.reduce((a,c)=>a+c.price,0);
+                return `<tr class="hover:bg-slate-900/50 cursor-pointer text-white" onclick="showHistoryDetail(${tx.id})"><td class="px-8 py-6 text-white text-white"><p class="font-black text-xs text-white">${new Date(tx.timestamp).toLocaleDateString('id-ID')}</p></td><td class="px-8 py-6 text-indigo-400 uppercase font-black text-white"> ${tx.customerName} <br><span class="text-[9px] text-slate-600">${tx.stationName}</span></td><td class="px-8 py-6 text-white text-[10px] uppercase font-bold text-white">Durasi: ${tx.duration} <br> Total: Rp ${tx.total.toLocaleString()}</td><td class="px-8 py-6 text-right text-white"><button class="bg-indigo-600/20 text-indigo-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase text-white">Detail</button></td></tr>`;
+            }).join('');
+            document.getElementById('hist-count').innerText = filtered.length; document.getElementById('hist-play-total').innerText = `Rp ${tp.toLocaleString()}`; document.getElementById('hist-menu-total').innerText = `Rp ${tm.toLocaleString()}`;
         }
-
-        // --- Admin Functions ---
-        function addStation(type) {
-            const nextNo = stations.filter(s => s.type === type).length + 1;
-            stations.push({ id: Date.now(), name: (type === 'billiard' ? 'Meja ' : 'PS ') + nextNo, type, status: 'idle', orders: [] });
-            saveData(); renderAdminStations(); renderStations();
-        }
-
-        function renderAdminStations() {
-            const list = document.getElementById('adminStationList');
-            if(!list) return;
-            list.innerHTML = stations.map(s => `<div onclick="selectStationAdmin(${s.id})" class="flex justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 transition-all hover:border-indigo-500 cursor-pointer ${adminSelectedStationId === s.id ? 'border-indigo-500 bg-indigo-900/10' : ''}"><span class="font-black text-[10px] tracking-widest uppercase text-white">${s.name} <span class="text-slate-600 ml-2">(${s.type})</span></span><button onclick="deleteStation(event, ${s.id})" class="text-red-500 p-1">✕</button></div>`).join('');
-        }
-
-        function selectStationAdmin(id) {
-            adminSelectedStationId = id;
-            document.getElementById('packageContentPlaceholder').classList.add('hidden');
-            document.getElementById('packageContentActive').classList.remove('hidden');
-            renderAdminStations(); renderAdminPackages();
-        }
-
-        function addPackage() {
-            const name = document.getElementById('newPkgName').value, mins = parseInt(document.getElementById('newPkgTime').value), price = parseInt(document.getElementById('newPkgPrice').value);
-            if (!name || !mins || !price) return;
-            packages.push({ id: 'pkg_' + Date.now(), name: name + ` (${mins}m)`, type: 'timed', duration: mins, price, stationId: adminSelectedStationId });
-            saveData(); renderAdminPackages();
-            document.getElementById('newPkgName').value = ''; document.getElementById('newPkgTime').value = ''; document.getElementById('newPkgPrice').value = '';
-        }
-
-        function renderAdminPackages() {
-            const list = document.getElementById('adminPkgList');
-            const stationPkgs = packages.filter(p => p.stationId === adminSelectedStationId);
-            list.innerHTML = stationPkgs.length ? stationPkgs.map(p => `<div class="flex justify-between bg-slate-800/50 p-4 rounded-2xl text-[10px] border border-slate-700 text-white"><span class="font-black tracking-widest uppercase">${p.name} • <span class="text-emerald-400">Rp${p.price.toLocaleString()}</span></span><button onclick="deletePkg('${p.id}')" class="text-red-500">✕</button></div>`).join('') : '<p class="text-[10px] italic text-slate-600 text-center py-4 uppercase font-black">Paket Kosong</p>';
-        }
-
-        function addMenu() {
-            const name = document.getElementById('newMenuName').value, price = parseInt(document.getElementById('newMenuPrice').value);
-            if (!name || !price) return;
-            menus.push({ id: Date.now(), name, price });
-            saveData(); renderAdminMenu();
-            document.getElementById('newMenuName').value = ''; document.getElementById('newMenuPrice').value = '';
-        }
-
-        function renderAdminMenu() {
-            const list = document.getElementById('adminMenuList');
-            if(!list) return;
-            list.innerHTML = menus.length ? menus.map(m => `<div class="flex justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 text-[10px] text-white"><span class="font-black uppercase tracking-widest">${m.name}</span><div class="flex items-center gap-4 font-black"><span class="text-emerald-400">Rp${m.price.toLocaleString()}</span><button onclick="deleteMenu(${m.id})" class="text-red-500">✕</button></div></div>`).join('') : '<p class="text-center py-4 text-slate-600 font-black uppercase text-[10px]">Inventaris Kosong</p>';
-        }
-
-        // --- Session Start ---
-        function openStartModal(id) {
-            selectedId = id;
-            const s = stations.find(x => x.id === id);
-            document.getElementById('startStationName').innerText = `${s.type.toUpperCase()} / ${s.name.toUpperCase()}`;
-            document.getElementById('custName').value = '';
-            document.getElementById('custWA').value = '';
-            const availablePkgs = packages.filter(p => p.stationId === 'all' || p.stationId === id);
-            const pkgSelect = document.getElementById('packageSelect');
-            pkgSelect.innerHTML = availablePkgs.map(p => `<option value="${p.id}">${p.name} - Rp ${p.price.toLocaleString()}</option>`).join('');
-            if (pkgSelect.options.length > 0) pkgSelect.selectedIndex = 0;
-            document.getElementById('startSessionModal').classList.remove('hidden');
-            togglePriceInput();
-        }
-
+        function selectPayment(m) { selectedPaymentMethod = m; document.querySelectorAll('.payment-btn').forEach(b => b.classList.toggle('border-indigo-500', b.id === 'pay'+m)); document.getElementById('cashInputGroup').classList.toggle('hidden', m !== 'Tunai'); }
+        function calculateChange() { const t = parseInt(document.getElementById('checkGrandTotal').innerText.replace(/\D/g,'')), p = parseInt(document.getElementById('cashPaid').value || 0), c = p - t; document.getElementById('cashChange').innerText = c >= 0 ? `Rp ${c.toLocaleString()}` : "KURANG"; }
+        function addStation(t) { stations.push({ id: Date.now(), name: (t==='billiard'?'Meja ':'PS ') + (stations.filter(x=>x.type===t).length+1), type: t, status:'idle', orders:[] }); saveData(); renderAdminStations(); renderStations(); }
+        function renderAdminStations() { document.getElementById('adminStationList').innerHTML = stations.map(s => `<div onclick="selectStationAdmin(${s.id})" class="flex justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 text-white ${adminSelectedStationId===s.id?'border-indigo-500 bg-indigo-900/10':''}"><span class="font-black text-white text-[10px] uppercase">${s.name} (${s.type})</span><button onclick="deleteStation(event, ${s.id})" class="text-red-500">✕</button></div>`).join(''); }
+        function selectStationAdmin(id) { adminSelectedStationId = id; document.getElementById('packageContentPlaceholder').classList.add('hidden'); document.getElementById('packageContentActive').classList.remove('hidden'); renderAdminPackages(); renderAdminStations(); }
+        function addPackage() { const n = document.getElementById('newPkgName').value, m = parseInt(document.getElementById('newPkgTime').value), p = parseInt(document.getElementById('newPkgPrice').value); if(n && m && p) { packages.push({ id: Date.now(), name: n + ` (${m}m)`, type: 'timed', duration: m, price: p, stationId: adminSelectedStationId }); renderAdminPackages(); } }
+        function renderAdminPackages() { const pkgs = packages.filter(p => p.stationId === adminSelectedStationId); document.getElementById('adminPkgList').innerHTML = pkgs.map(p => `<div class="flex justify-between bg-slate-800/50 p-4 rounded-2xl text-[10px] text-white"><span>${p.name} • Rp${p.price.toLocaleString()}</span><button onclick="deletePkg(${p.id})" class="text-red-500">✕</button></div>`).join('') || '<p class="text-[10px] text-slate-600 text-center py-4">Paket Kosong</p>'; }
+        function addMenu() { const n = document.getElementById('newMenuName').value, p = parseInt(document.getElementById('newMenuPrice').value); if(n && p) { menus.push({ id: Date.now(), name: n, price: p }); renderAdminMenu(); } }
+        function renderAdminMenu() { document.getElementById('adminMenuList').innerHTML = menus.map(m => `<div class="flex justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 text-white text-[10px] uppercase"><span>${m.name}</span><div class="flex items-center gap-4 text-white"><span class="text-emerald-400">Rp${m.price.toLocaleString()}</span><button onclick="deleteMenu(${m.id})" class="text-red-500">✕</button></div></div>`).join(''); }
+        function openStartModal(id) { selectedId = id; const s = stations.find(x => x.id === id); document.getElementById('custName').value = ''; document.getElementById('custWA').value = ''; const avail = packages.filter(p => p.stationId === 'all' || p.stationId === id); document.getElementById('packageSelect').innerHTML = avail.map(p => `<option value="${p.id}">${p.name} - Rp ${p.price.toLocaleString()}</option>`).join(''); document.getElementById('startSessionModal').classList.remove('hidden'); }
+        function confirmStart() { const s = stations.find(x => x.id === selectedId), pId = document.getElementById('packageSelect').value, pkg = packages.find(x => x.id == pId), name = document.getElementById('custName').value; if(!name) return alert("Isi Nama!"); s.status = 'active'; s.customerName = name; s.wa = document.getElementById('custWA').value; s.pkgType = pkg.type; s.pkgPrice = pkg.price; s.pkgName = pkg.name; s.startTime = new Date().getTime(); s.orders = []; if(pkg.type==='timed') s.endTime = s.startTime + (pkg.duration*60000); else s.basePrice = parseInt(document.getElementById('basePrice').value); closeModals(); renderStations(); }
         function togglePriceInput() { document.getElementById('openPriceInput').classList.toggle('hidden', document.getElementById('packageSelect').value !== 'open'); }
-        function confirmStart() {
-            const s = stations.find(x => x.id === selectedId);
-            const pkg = packages.find(p => p.id === document.getElementById('packageSelect').value);
-            const name = document.getElementById('custName').value;
-            const wa = document.getElementById('custWA').value;
-            if(!name) { alert("Mohon masukkan nama pelanggan."); return; }
-            s.status = 'active'; s.customerName = name; s.wa = wa; s.pkgType = pkg.type; s.pkgPrice = pkg.price; s.pkgName = pkg.name; s.startTime = new Date().getTime(); s.orders = [];
-            if (pkg.type === 'timed') s.endTime = s.startTime + (pkg.duration * 60000);
-            else s.basePrice = parseInt(document.getElementById('basePrice').value);
-            closeModals(); renderStations();
-        }
-
-        // --- Utils ---
-        function playAlarm() {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'square'; osc.frequency.setValueAtTime(660, audioCtx.currentTime);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.start(); setTimeout(() => osc.stop(), 2500);
-        }
-        function formatTime(ms) {
-            let s = Math.floor(ms / 1000); let m = Math.floor(s / 60); let h = Math.floor(m / 60);
-            s %= 60; m %= 60; return [h, m, s].map(v => v < 10 ? '0' + v : v).join(':');
-        }
+        function closeModals() { document.querySelectorAll('#startSessionModal, #adminPanelModal, #orderMenuModal, #checkoutModal, #loginModal').forEach(m => m.classList.add('hidden')); currentHistoryTx = null; }
         function saveData() { localStorage.setItem('stations', JSON.stringify(stations)); localStorage.setItem('packages', JSON.stringify(packages)); localStorage.setItem('menus', JSON.stringify(menus)); }
-        function closeModals() { 
-            document.querySelectorAll('#startSessionModal, #adminPanelModal, #orderMenuModal, #checkoutModal, #loginModal').forEach(m => m.classList.add('hidden')); 
-            currentHistoryTx = null;
-        }
+        function formatTime(ms) { let s = Math.floor(Math.abs(ms) / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60); s %= 60; m %= 60; return [h, m, s].map(v => v < 10 ? '0' + v : v).join(':'); }
         function deleteStation(e, id) { e.stopPropagation(); stations = stations.filter(s => s.id !== id); saveData(); renderStations(); renderAdminStations(); }
-        function deletePkg(id) { packages = packages.filter(p => p.id !== id); saveData(); renderAdminPackages(); }
-        function deleteMenu(id) { menus = menus.filter(m => m.id !== id); saveData(); renderAdminMenu(); }
-
-        renderStations();
+        function deletePkg(id) { packages = packages.filter(p => p.id !== id); renderAdminPackages(); }
+        function deleteMenu(id) { menus = menus.filter(m => m.id !== id); renderAdminMenu(); }
     </script>
 </body>
 </html>
