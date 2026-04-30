@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Management - Pro Billing & History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .card-active { border-left: 4px solid #10b981; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1); }
+        .card-expired { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.1); animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        .tab-btn.active { border-bottom: 2px solid #6366f1; color: #818cf8; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">E</div>
+            <h1 class="text-xl font-bold tracking-tight">ELITE <span class="text-indigo-400">PRO</span></h1>
+        </div>
+        
+        <div class="flex gap-6">
+            <button onclick="switchTab('dashboard')" id="tab-dash" class="tab-btn active text-sm font-bold uppercase tracking-widest py-2 transition-all">Sesi Aktif</button>
+            <button onclick="switchTab('history')" id="tab-hist" class="tab-btn text-sm font-bold uppercase tracking-widest py-2 transition-all text-slate-500 hover:text-slate-300">Riwayat</button>
+        </div>
+
+        <button onclick="toggleAdminModal()" class="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 flex items-center gap-2 transition-all group">
+            <span class="group-hover:rotate-90 transition-transform duration-500">⚙️</span> 
+            <span class="hidden md:inline text-xs font-bold">ADMIN</span>
+        </button>
+    </nav>
+
+    <!-- Dashboard Sesi Aktif -->
+    <main id="dashboard-view" class="max-w-7xl mx-auto px-6 py-8">
+        <div id="stationsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Kartu Meja via JS -->
+        </div>
+    </main>
+
+    <!-- View Riwayat Transaksi -->
+    <main id="history-view" class="max-w-7xl mx-auto px-6 py-8 hidden">
+        <div class="glass p-6 rounded-2xl mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <h2 class="text-2xl font-bold text-indigo-400">Laporan Pendapatan</h2>
+                <div class="flex gap-2 bg-slate-900 p-1 rounded-xl">
+                    <button onclick="setHistoryFilter('daily')" id="f-daily" class="px-4 py-2 rounded-lg text-xs font-bold active-filter bg-indigo-600">Harian</button>
+                    <button onclick="setHistoryFilter('weekly')" id="f-weekly" class="px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 text-slate-400">Mingguan</button>
+                    <button onclick="setHistoryFilter('monthly')" id="f-monthly" class="px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 text-slate-400">Bulanan</button>
+                    <button onclick="setHistoryFilter('yearly')" id="f-yearly" class="px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 text-slate-400">Tahunan</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                <div class="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Total Transaksi</p>
+                    <h3 id="hist-count" class="text-3xl font-bold">0</h3>
+                </div>
+                <div class="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Total Pendapatan Sewa</p>
+                    <h3 id="hist-play-total" class="text-3xl font-bold text-indigo-400">Rp 0</h3>
+                </div>
+                <div class="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Total Pendapatan Menu</p>
+                    <h3 id="hist-menu-total" class="text-3xl font-bold text-emerald-400">Rp 0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass overflow-hidden rounded-2xl">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-widest font-bold">
+                    <tr>
+                        <th class="px-6 py-4">Waktu</th>
+                        <th class="px-6 py-4">Customer / Unit</th>
+                        <th class="px-6 py-4">Rincian Sesi</th>
+                        <th class="px-6 py-4 text-right">Total Tagihan</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody" class="divide-y divide-slate-800">
+                    <!-- Riwayat Transaksi via JS -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal Mulai Sesi -->
+    <div id="startSessionModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-md rounded-2xl p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-4">Mulai Sesi - <span id="startStationName" class="text-indigo-400"></span></h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Data Customer</label>
+                    <input type="text" id="custName" placeholder="Nama Customer" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 mt-1 focus:border-indigo-500 outline-none">
+                    <input type="tel" id="custWA" placeholder="WhatsApp (628...)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 mt-2 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pilih Paket</label>
+                    <select id="packageSelect" onchange="togglePriceInput()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 mt-1 focus:border-indigo-500 outline-none">
+                    </select>
+                </div>
+                <div id="openPriceInput" class="hidden">
+                    <label class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Harga Per Jam (Rp)</label>
+                    <input type="number" id="basePrice" value="45000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 mt-1 outline-none">
+                </div>
+                <div class="pt-4 flex gap-3">
+                    <button onclick="confirmStart()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20">START SESSION</button>
+                    <button onclick="closeModals()" class="flex-1 bg-slate-800 py-3 rounded-xl transition-all">BATAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pesan Menu (Multi-Order Supported) -->
+    <div id="orderMenuModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="glass w-full max-w-3xl rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold">Pesan Menu</h2>
+                    <p id="orderStationName" class="text-indigo-400 text-sm font-bold uppercase tracking-wider mt-1"></p>
+                </div>
+                <button onclick="closeModals()" class="text-slate-500 hover:text-white transition-colors">✕ Tutup</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-8 overflow-hidden">
+                <!-- Kolom 1: Pilih Menu -->
+                <div class="md:col-span-3 flex flex-col h-full overflow-hidden">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Daftar Menu Tersedia</h3>
+                    <div id="menuSelectionList" class="flex-1 overflow-y-auto space-y-2 pr-2 border-r border-slate-800">
+                        <!-- List menu -->
+                    </div>
+                </div>
+
+                <!-- Kolom 2: Pesanan Saat Ini -->
+                <div class="md:col-span-2 flex flex-col h-full overflow-hidden">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Pesanan Dipilih</h3>
+                    <div id="currentStationOrderList" class="flex-1 overflow-y-auto space-y-2 pr-2 mb-4">
+                        <!-- List pesanan -->
+                    </div>
+                    
+                    <div class="p-5 bg-indigo-600/10 border border-indigo-500/20 rounded-2xl mt-auto">
+                        <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Subtotal Menu</p>
+                        <h4 id="tempMenuTotal" class="text-2xl font-bold text-emerald-400">Rp 0</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Checkout -->
+    <div id="checkoutModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div class="glass w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+            <div class="bg-indigo-600 px-8 py-5">
+                <h2 class="text-xl font-bold tracking-tight">Billing Checkout</h2>
+            </div>
+            
+            <div class="p-8 space-y-6 max-h-[75vh] overflow-y-auto">
+                <div class="flex justify-between items-start border-b border-slate-800 pb-5">
+                    <div>
+                        <h3 id="checkStationName" class="text-2xl font-bold">Meja 1</h3>
+                        <p id="checkCustName" class="text-indigo-400 font-bold">Budi</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="checkDuration" class="font-mono text-xl font-bold">01:30:00</p>
+                        <p id="checkTimeRange" class="text-[10px] text-slate-500 uppercase font-bold">14:00 - 15:30</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-400">Sewa Meja (<span id="checkPkgName">Paket 1 Jam</span>)</span>
+                        <span id="checkPlayCost" class="font-bold">Rp 0</span>
+                    </div>
+                    <div id="checkMenuList" class="space-y-1 pt-1 border-t border-slate-800/50 mt-1">
+                        <!-- Item menu -->
+                    </div>
+                </div>
+
+                <div class="bg-indigo-600/10 p-5 rounded-2xl flex justify-between items-center border border-indigo-500/20">
+                    <span class="font-bold text-lg">TOTAL TAGIHAN</span>
+                    <span id="checkGrandTotal" class="text-3xl font-bold text-emerald-400">Rp 0</span>
+                </div>
+
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-3 block">Metode Pembayaran</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectPayment('Tunai')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-bold bg-slate-900/50 hover:border-indigo-500 transition-all" id="payTunai">💵 TUNAI</button>
+                        <button onclick="selectPayment('QRIS')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-bold bg-slate-900/50 hover:border-indigo-500 transition-all" id="payQRIS">📱 QRIS</button>
+                        <button onclick="selectPayment('GoPay')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-bold bg-slate-900/50 hover:border-indigo-500 transition-all" id="payGoPay">🌀 GOPAY</button>
+                        <button onclick="selectPayment('Dana')" class="payment-btn border border-slate-800 p-4 rounded-xl text-xs font-bold bg-slate-900/50 hover:border-indigo-500 transition-all" id="payDana">💎 DANA</button>
+                    </div>
+                </div>
+
+                <div id="cashInputGroup" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] text-slate-400 uppercase mb-2 block font-bold">Bayar (Rp)</label>
+                            <input type="number" id="cashPaid" oninput="calculateChange()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 outline-none focus:border-emerald-500 font-mono text-xl text-white">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 uppercase mb-2 block font-bold">Kembali (Rp)</label>
+                            <div id="cashChange" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-mono text-xl text-emerald-500">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-6 flex flex-col gap-3">
+                    <button onclick="processPayment()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-5 rounded-2xl font-bold text-lg transition-all shadow-lg shadow-emerald-500/20">SELESAIKAN & SHARE STRUK</button>
+                    <button onclick="closeModals()" class="w-full text-slate-500 py-2 font-bold text-sm">BATAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Admin -->
+    <div id="adminPanelModal" class="fixed inset-0 z-[200] hidden bg-slate-950 overflow-y-auto p-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-10">
+                <h2 class="text-3xl font-bold tracking-tight">Admin <span class="text-indigo-400">Control</span></h2>
+                <button onclick="closeModals()" class="bg-slate-800 px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition-all">✕ TUTUP</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Kolom 1: Meja -->
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="font-bold text-indigo-400 mb-6 uppercase tracking-widest text-xs">1. Daftar Meja / Unit</h3>
+                    <div class="flex gap-2 mb-6">
+                        <button onclick="addStation('billiard')" class="flex-1 bg-indigo-600 py-3 rounded-xl text-[10px] font-bold tracking-widest hover:bg-indigo-500 transition-all">+ BILLIARD</button>
+                        <button onclick="addStation('ps')" class="flex-1 bg-slate-700 py-3 rounded-xl text-[10px] font-bold tracking-widest hover:bg-slate-600 transition-all">+ PS</button>
+                    </div>
+                    <div id="adminStationList" class="space-y-2 max-h-[400px] overflow-y-auto pr-2"></div>
+                </div>
+
+                <!-- Kolom 2: Paket -->
+                <div class="glass p-6 rounded-3xl min-h-[300px]">
+                    <h3 class="font-bold text-indigo-400 mb-6 uppercase tracking-widest text-xs">2. Pengaturan Paket</h3>
+                    <div id="packageContentPlaceholder" class="flex flex-col items-center justify-center h-full text-center text-slate-700">
+                        <p class="text-sm italic">Pilih meja untuk mengatur paket khusus</p>
+                    </div>
+                    <div id="packageContentActive" class="hidden">
+                        <div id="adminPkgList" class="space-y-2 mb-8"></div>
+                        <div class="space-y-3 pt-6 border-t border-slate-800">
+                            <input type="text" id="newPkgName" placeholder="Nama Paket" class="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-sm outline-none">
+                            <div class="flex gap-2">
+                                <input type="number" id="newPkgTime" placeholder="Menit" class="w-1/2 bg-slate-900 border border-slate-800 p-3 rounded-xl text-sm">
+                                <input type="number" id="newPkgPrice" placeholder="Harga" class="w-1/2 bg-slate-900 border border-slate-800 p-3 rounded-xl text-sm">
+                            </div>
+                            <button onclick="addPackage()" class="w-full bg-indigo-600 py-3 rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all">SIMPAN PAKET</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom 3: Menu -->
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="font-bold text-indigo-400 mb-6 uppercase tracking-widest text-xs">3. Inventaris Menu</h3>
+                    <div id="adminMenuList" class="space-y-2 max-h-[300px] overflow-y-auto mb-8 pr-2"></div>
+                    <div class="space-y-3 pt-6 border-t border-slate-800">
+                        <input type="text" id="newMenuName" placeholder="Nama Menu" class="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-sm">
+                        <input type="number" id="newMenuPrice" placeholder="Harga (Rp)" class="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-sm">
+                        <button onclick="addMenu()" class="w-full bg-emerald-600 py-3 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-all">TAMBAH ITEM</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentTab = 'dashboard';
+        let historyFilter = 'daily';
+        
+        let stations = JSON.parse(localStorage.getItem('stations')) || [
+            { id: 1, name: 'Meja 1', type: 'billiard', status: 'idle', orders: [] },
+            { id: 2, name: 'Meja 2', type: 'billiard', status: 'idle', orders: [] }
+        ];
+
+        let packages = JSON.parse(localStorage.getItem('packages')) || [
+            { id: 'open', name: 'Open (Per Menit)', type: 'open', price: 45000, stationId: 'all' }
+        ];
+
+        let menus = JSON.parse(localStorage.getItem('menus')) || [
+            { id: 1, name: 'Es Teh Manis', price: 5000 },
+            { id: 2, name: 'Kentang Goreng', price: 15000 }
+        ];
+
+        let transactionHistory = JSON.parse(localStorage.getItem('transactionHistory')) || [];
+
+        let activeSessions = {};
+        let selectedId = null; 
+        let adminSelectedStationId = null;
+        let selectedPaymentMethod = 'Tunai';
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // --- Core Navigation ---
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('dashboard-view').classList.toggle('hidden', tab !== 'dashboard');
+            document.getElementById('history-view').classList.toggle('hidden', tab !== 'history');
+            
+            document.getElementById('tab-dash').classList.toggle('active', tab === 'dashboard');
+            document.getElementById('tab-dash').classList.toggle('text-slate-500', tab !== 'dashboard');
+            document.getElementById('tab-hist').classList.toggle('active', tab === 'history');
+            document.getElementById('tab-hist').classList.toggle('text-slate-500', tab !== 'history');
+
+            if (tab === 'history') renderHistory();
+        }
+
+        // --- Core Rendering ---
+        function renderStations() {
+            const grid = document.getElementById('stationsGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            stations.forEach(s => {
+                const isActive = s.status === 'active';
+                const isExpired = s.status === 'expired';
+                let cardClass = isActive ? 'card-active' : 'card-idle border-slate-800';
+                if(isExpired) cardClass = 'card-expired';
+
+                const totalMenuCost = s.orders ? s.orders.reduce((acc, curr) => acc + curr.price, 0) : 0;
+
+                grid.innerHTML += `
+                    <div class="glass p-6 rounded-3xl transition-all ${cardClass}">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="text-xl font-bold">${s.name}</h3>
+                                <span class="text-[9px] uppercase font-black px-2 py-1 bg-indigo-900/30 text-indigo-400 rounded tracking-widest">${s.type}</span>
+                            </div>
+                            <span class="text-[10px] font-bold ${isActive ? 'text-emerald-400' : 'text-slate-600'}">${isActive ? '● SEDANG BERMAIN' : '○ KOSONG'}</span>
+                        </div>
+                        <p class="text-xs font-bold mb-4 truncate text-slate-400 uppercase tracking-tighter">${isActive || isExpired ? '👤 ' + s.customerName : 'Siap Digunakan'}</p>
+                        
+                        <div id="timer-${s.id}" class="text-5xl font-mono font-black text-center py-6 text-white tracking-tighter">00:00:00</div>
+                        
+                        <div class="flex justify-between text-[10px] text-slate-500 mb-8 uppercase font-bold tracking-widest border-t border-slate-800 pt-4">
+                            <span>Sewa: <span id="liveCost-${s.id}" class="text-indigo-400">Rp 0</span></span>
+                            <span>Menu: <span class="text-emerald-400">Rp ${totalMenuCost.toLocaleString()}</span></span>
+                        </div>
+
+                        <div class="flex gap-2">
+                            ${isActive || isExpired ? 
+                                `<button onclick="openOrderModal(${s.id})" class="bg-slate-800 p-4 rounded-2xl transition-all hover:bg-indigo-600 group" title="Pesan Menu">🍽️</button>
+                                 <button onclick="prepareCheckout(${s.id})" class="flex-1 bg-red-600/20 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white py-4 rounded-2xl font-black transition-all">STOP SESI</button>` :
+                                `<button onclick="openStartModal(${s.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-black transition-all shadow-lg shadow-indigo-600/20">MULAI BERMAIN</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+                if(isActive || isExpired) startTimerLoop(s);
+            });
+            renderAdminStations();
+        }
+
+        // --- Timer Loop ---
+        function startTimerLoop(s) {
+            if (activeSessions[s.id]) clearInterval(activeSessions[s.id]);
+            activeSessions[s.id] = setInterval(() => {
+                const now = new Date().getTime();
+                let diff, display, playCost = 0;
+
+                if (s.pkgType === 'timed') {
+                    diff = s.endTime - now;
+                    if (diff <= 0) { diff = 0; handleExpired(s); }
+                    display = formatTime(diff);
+                    playCost = s.pkgPrice || 0;
+                } else {
+                    diff = now - s.startTime;
+                    display = formatTime(diff);
+                    playCost = Math.ceil((diff / 60000) * (s.basePrice / 60));
+                }
+
+                const timerEl = document.getElementById(`timer-${s.id}`);
+                const costEl = document.getElementById(`liveCost-${s.id}`);
+                if (timerEl) timerEl.innerText = display;
+                if (costEl) costEl.innerText = `Rp ${playCost.toLocaleString()}`;
+            }, 1000);
+        }
+
+        function handleExpired(s) {
+            if (s.status === 'active') {
+                s.status = 'expired';
+                saveData();
+                renderStations();
+                playAlarm();
+            }
+        }
+
+        // --- Ordering ---
+        function openOrderModal(id) {
+            selectedId = id;
+            const s = stations.find(x => x.id === id);
+            document.getElementById('orderStationName').innerText = `${s.name} - ${s.customerName}`;
+            
+            const list = document.getElementById('menuSelectionList');
+            list.innerHTML = menus.map(m => `
+                <div class="flex justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/50 transition-all group">
+                    <div>
+                        <p class="font-bold text-sm">${m.name}</p>
+                        <p class="text-xs text-emerald-400 font-bold">Rp ${m.price.toLocaleString()}</p>
+                    </div>
+                    <button onclick="addOrderToStation(${m.id})" class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2 rounded-xl text-xs font-black transition-all">TAMBAH</button>
+                </div>
+            `).join('');
+            
+            renderCurrentOrders(s);
+            document.getElementById('orderMenuModal').classList.remove('hidden');
+        }
+
+        function renderCurrentOrders(s) {
+            const currentList = document.getElementById('currentStationOrderList');
+            const totalEl = document.getElementById('tempMenuTotal');
+            let total = 0;
+            
+            if (!s.orders || s.orders.length === 0) {
+                currentList.innerHTML = '<div class="text-center py-12"><p class="text-xs text-slate-600 italic">Pesanan masih kosong</p></div>';
+                totalEl.innerText = 'Rp 0';
+                return;
+            }
+
+            currentList.innerHTML = s.orders.map((o, index) => {
+                total += o.price;
+                return `
+                    <div class="flex justify-between items-center bg-indigo-900/10 p-3 rounded-xl border border-indigo-500/10 group">
+                        <div class="flex-1">
+                            <p class="text-xs font-bold">${o.name}</p>
+                            <p class="text-[9px] text-slate-500 font-bold">${o.time}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-indigo-400">Rp ${o.price.toLocaleString()}</span>
+                            <button onclick="removeOrderFromStation(${index})" class="text-red-500 hover:scale-110 transition-transform">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            totalEl.innerText = `Rp ${total.toLocaleString()}`;
+        }
+
+        function addOrderToStation(menuId) {
+            const s = stations.find(x => x.id === selectedId);
+            const menu = menus.find(m => m.id === menuId);
+            if (!s.orders) s.orders = [];
+            s.orders.push({ ...menu, time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) });
+            saveData();
+            renderCurrentOrders(s);
+            renderStations();
+        }
+
+        function removeOrderFromStation(index) {
+            const s = stations.find(x => x.id === selectedId);
+            s.orders.splice(index, 1);
+            saveData();
+            renderCurrentOrders(s);
+            renderStations();
+        }
+
+        // --- Checkout ---
+        function prepareCheckout(id) {
+            selectedId = id;
+            const s = stations.find(x => x.id === id);
+            const now = new Date().getTime();
+            let durationMs = now - s.startTime;
+            if(s.pkgType === 'timed' && now > s.endTime) durationMs = s.endTime - s.startTime;
+
+            let playCost = s.pkgType === 'timed' ? s.pkgPrice : Math.ceil((durationMs / 60000) * (s.basePrice / 60));
+            let pkgName = s.pkgType === 'timed' ? s.pkgName : `Open (Rp ${s.basePrice.toLocaleString()}/jam)`;
+            let menuCost = s.orders ? s.orders.reduce((acc, curr) => acc + curr.price, 0) : 0;
+            let grandTotal = playCost + menuCost;
+
+            document.getElementById('checkStationName').innerText = s.name;
+            document.getElementById('checkCustName').innerText = s.customerName;
+            document.getElementById('checkDuration').innerText = formatTime(durationMs);
+            document.getElementById('checkTimeRange').innerText = `${new Date(s.startTime).toLocaleTimeString()} - ${new Date().toLocaleTimeString()}`;
+            document.getElementById('checkPkgName').innerText = pkgName;
+            document.getElementById('checkPlayCost').innerText = `Rp ${playCost.toLocaleString()}`;
+            document.getElementById('checkGrandTotal').innerText = `Rp ${grandTotal.toLocaleString()}`;
+            
+            const menuList = document.getElementById('checkMenuList');
+            menuList.innerHTML = s.orders ? s.orders.map(o => `
+                <div class="flex justify-between text-[11px] py-0.5">
+                    <span class="text-slate-500">• ${o.name}</span>
+                    <span class="font-bold">Rp ${o.price.toLocaleString()}</span>
+                </div>
+            `).join('') : '';
+
+            document.getElementById('cashPaid').value = "";
+            document.getElementById('cashChange').innerText = "0";
+            selectPayment('Tunai');
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function selectPayment(method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-400');
+                btn.classList.add('border-slate-800', 'bg-slate-900/50');
+            });
+            document.getElementById(`pay${method}`).classList.add('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-400');
+            document.getElementById('cashInputGroup').classList.toggle('hidden', method !== 'Tunai');
+        }
+
+        function calculateChange() {
+            const total = parseInt(document.getElementById('checkGrandTotal').innerText.replace(/[^0-9]/g, ''));
+            const paid = parseInt(document.getElementById('cashPaid').value) || 0;
+            const change = paid - total;
+            const changeEl = document.getElementById('cashChange');
+            changeEl.innerText = change >= 0 ? `Rp ${change.toLocaleString()}` : "Kurang!";
+            changeEl.className = change >= 0 ? "w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 font-mono text-xl text-emerald-500" : "w-full bg-slate-900 border border-red-500/30 rounded-xl px-4 py-4 font-mono text-xl text-red-500";
+        }
+
+        function processPayment() {
+            const s = stations.find(x => x.id === selectedId);
+            const totalStr = document.getElementById('checkGrandTotal').innerText;
+            const total = parseInt(totalStr.replace(/[^0-9]/g, ''));
+            const paid = parseInt(document.getElementById('cashPaid').value) || 0;
+
+            if(selectedPaymentMethod === 'Tunai' && paid < total) { alert("Pembayaran kurang!"); return; }
+
+            // Simpan ke Riwayat
+            const playCost = parseInt(document.getElementById('checkPlayCost').innerText.replace(/[^0-9]/g, ''));
+            const menuCost = s.orders.reduce((acc, curr) => acc + curr.price, 0);
+            
+            const transaction = {
+                id: Date.now(),
+                timestamp: new Date().getTime(),
+                stationName: s.name,
+                customerName: s.customerName,
+                duration: document.getElementById('checkDuration').innerText,
+                playCost: playCost,
+                menuCost: menuCost,
+                total: total,
+                method: selectedPaymentMethod,
+                items: [...s.orders]
+            };
+
+            transactionHistory.push(transaction);
+            
+            // Format Struk WA
+            const itemsTxt = s.orders.map(o => `\n- ${o.name}: Rp ${o.price.toLocaleString()}`).join('');
+            const text = `*ELITE PRO - STRUK DIGITAL*\n---------------------------\nMeja: ${s.name}\nCust: ${s.customerName}\nDurasi: ${transaction.duration}\n---------------------------\nSewa: Rp ${playCost.toLocaleString()}${itemsTxt}\n---------------------------\n*TOTAL: Rp ${total.toLocaleString()}*\nMetode: ${selectedPaymentMethod}\n---------------------------\nTerima kasih!`;
+
+            // Reset
+            clearInterval(activeSessions[s.id]);
+            s.status = 'idle'; s.orders = []; s.customerName = ''; s.wa = '';
+            
+            saveData();
+            renderStations();
+            closeModals();
+
+            if (transactionHistory.length > 500) transactionHistory.shift(); // Limit storage
+            localStorage.setItem('transactionHistory', JSON.stringify(transactionHistory));
+
+            const waNum = transaction.wa ? transaction.wa.replace(/[^0-9]/g, '') : '';
+            const url = `https://wa.me/${waNum.startsWith('0') ? '62'+waNum.substring(1) : waNum}?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+
+        // --- History & Filters ---
+        function setHistoryFilter(f) {
+            historyFilter = f;
+            ['daily', 'weekly', 'monthly', 'yearly'].forEach(id => {
+                const btn = document.getElementById('f-'+id);
+                btn.className = id === f ? 'px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 text-slate-400';
+            });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const body = document.getElementById('historyTableBody');
+            const now = new Date();
+            let totalPlay = 0;
+            let totalMenu = 0;
+            let count = 0;
+
+            const filtered = transactionHistory.filter(tx => {
+                const date = new Date(tx.timestamp);
+                if (historyFilter === 'daily') return date.toDateString() === now.toDateString();
+                if (historyFilter === 'weekly') {
+                    const diff = now.getTime() - date.getTime();
+                    return diff <= 7 * 24 * 60 * 60 * 1000;
+                }
+                if (historyFilter === 'monthly') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                if (historyFilter === 'yearly') return date.getFullYear() === now.getFullYear();
+                return true;
+            }).reverse();
+
+            body.innerHTML = filtered.length ? filtered.map(tx => {
+                totalPlay += tx.playCost;
+                totalMenu += tx.menuCost;
+                count++;
+                return `
+                    <tr class="hover:bg-slate-900/30 transition-colors">
+                        <td class="px-6 py-4">
+                            <p class="font-bold text-xs">${new Date(tx.timestamp).toLocaleDateString('id-ID')}</p>
+                            <p class="text-[10px] text-slate-500 font-mono">${new Date(tx.timestamp).toLocaleTimeString('id-ID')}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="font-black text-indigo-400">${tx.customerName}</p>
+                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${tx.stationName}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-xs font-bold">Durasi: ${tx.duration}</p>
+                            <p class="text-[10px] text-slate-500">Sewa: Rp${tx.playCost.toLocaleString()} | Menu: Rp${tx.menuCost.toLocaleString()}</p>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <p class="font-black text-emerald-400 text-base">Rp ${tx.total.toLocaleString()}</p>
+                            <p class="text-[9px] text-slate-600 font-bold uppercase">${tx.method}</p>
+                        </td>
+                    </tr>
+                `;
+            }).join('') : '<tr><td colspan="4" class="text-center py-20 text-slate-600 italic">Tidak ada transaksi ditemukan</td></tr>';
+
+            document.getElementById('hist-count').innerText = count;
+            document.getElementById('hist-play-total').innerText = `Rp ${totalPlay.toLocaleString()}`;
+            document.getElementById('hist-menu-total').innerText = `Rp ${totalMenu.toLocaleString()}`;
+        }
+
+        // --- Administrative ---
+        function openStartModal(id) {
+            selectedId = id;
+            const s = stations.find(x => x.id === id);
+            document.getElementById('startStationName').innerText = s.name;
+            const availablePkgs = packages.filter(p => p.stationId === 'all' || p.stationId === id);
+            document.getElementById('packageSelect').innerHTML = availablePkgs.map(p => `<option value="${p.id}">${p.name} - Rp ${p.price.toLocaleString()}</option>`).join('');
+            document.getElementById('startSessionModal').classList.remove('hidden');
+            togglePriceInput();
+        }
+
+        function togglePriceInput() {
+            document.getElementById('openPriceInput').classList.toggle('hidden', document.getElementById('packageSelect').value !== 'open');
+        }
+
+        function confirmStart() {
+            const s = stations.find(x => x.id === selectedId);
+            const pkg = packages.find(p => p.id === document.getElementById('packageSelect').value);
+            const name = document.getElementById('custName').value;
+            const wa = document.getElementById('custWA').value;
+
+            if(!name) { alert("Nama Customer wajib diisi!"); return; }
+
+            s.status = 'active'; s.customerName = name; s.wa = wa; s.pkgType = pkg.type; s.pkgPrice = pkg.price; s.pkgName = pkg.name; s.startTime = new Date().getTime(); s.orders = [];
+            if (pkg.type === 'timed') s.endTime = s.startTime + (pkg.duration * 60000);
+            else s.basePrice = parseInt(document.getElementById('basePrice').value);
+
+            closeModals(); renderStations();
+        }
+
+        function addStation(type) {
+            const nextNo = stations.filter(s => s.type === type).length + 1;
+            stations.push({ id: Date.now(), name: (type === 'billiard' ? 'Meja ' : 'PS ') + nextNo, type, status: 'idle', orders: [] });
+            saveData(); renderStations();
+        }
+
+        function renderAdminStations() {
+            const list = document.getElementById('adminStationList');
+            if(!list) return;
+            list.innerHTML = stations.map(s => `
+                <div onclick="selectStationAdmin(${s.id})" class="flex justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 transition-all hover:border-indigo-500 cursor-pointer ${adminSelectedStationId === s.id ? 'border-indigo-500 bg-indigo-900/10' : ''}">
+                    <span class="font-bold text-xs">${s.name} <span class="text-[9px] text-slate-500 uppercase ml-2">${s.type}</span></span>
+                    <button onclick="deleteStation(event, ${s.id})" class="text-red-500">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function selectStationAdmin(id) {
+            adminSelectedStationId = id;
+            document.getElementById('packageContentPlaceholder').classList.add('hidden');
+            document.getElementById('packageContentActive').classList.remove('hidden');
+            renderAdminStations(); renderAdminPackages();
+        }
+
+        function addPackage() {
+            const name = document.getElementById('newPkgName').value, mins = parseInt(document.getElementById('newPkgTime').value), price = parseInt(document.getElementById('newPkgPrice').value);
+            if (!name || !mins || !price) return;
+            packages.push({ id: 'pkg_' + Date.now(), name: name + ` (${mins}m)`, type: 'timed', duration: mins, price, stationId: adminSelectedStationId });
+            saveData(); renderAdminPackages();
+        }
+
+        function renderAdminPackages() {
+            const list = document.getElementById('adminPkgList');
+            const stationPkgs = packages.filter(p => p.stationId === adminSelectedStationId);
+            list.innerHTML = stationPkgs.length ? stationPkgs.map(p => `
+                <div class="flex justify-between bg-slate-800/50 p-3 rounded-xl text-xs border border-slate-700">
+                    <span class="font-bold">${p.name} - <span class="text-emerald-400">Rp${p.price.toLocaleString()}</span></span>
+                    <button onclick="deletePkg('${p.id}')" class="text-red-500 font-black">✕</button>
+                </div>
+            `).join('') : '<p class="text-[10px] italic text-slate-600 text-center py-4">Belum ada paket khusus</p>';
+        }
+
+        function addMenu() {
+            const name = document.getElementById('newMenuName').value, price = parseInt(document.getElementById('newMenuPrice').value);
+            if (!name || !price) return;
+            menus.push({ id: Date.now(), name, price });
+            saveData(); renderAdminMenu();
+        }
+
+        function renderAdminMenu() {
+            const list = document.getElementById('adminMenuList');
+            if(!list) return;
+            list.innerHTML = menus.length ? menus.map(m => `
+                <div class="flex justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs">
+                    <span class="font-bold">${m.name}</span>
+                    <div class="flex items-center gap-3 font-black">
+                        <span class="text-emerald-400">Rp${m.price.toLocaleString()}</span>
+                        <button onclick="deleteMenu(${m.id})" class="text-red-500">✕</button>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-center py-4 text-slate-600 italic">Menu kosong</p>';
+        }
+
+        // --- Utils ---
+        function playAlarm() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(660, audioCtx.currentTime);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start(); setTimeout(() => osc.stop(), 2500);
+        }
+
+        function formatTime(ms) {
+            let s = Math.floor(ms / 1000); let m = Math.floor(s / 60); let h = Math.floor(m / 60);
+            s %= 60; m %= 60; return [h, m, s].map(v => v < 10 ? '0' + v : v).join(':');
+        }
+
+        function saveData() {
+            localStorage.setItem('stations', JSON.stringify(stations));
+            localStorage.setItem('packages', JSON.stringify(packages));
+            localStorage.setItem('menus', JSON.stringify(menus));
+        }
+
+        function toggleAdminModal() { document.getElementById('adminPanelModal').classList.toggle('hidden'); renderAdminMenu(); renderAdminStations(); }
+        function closeModals() { document.querySelectorAll('#startSessionModal, #adminPanelModal, #orderMenuModal, #checkoutModal').forEach(m => m.classList.add('hidden')); }
+        function deleteStation(e, id) { e.stopPropagation(); stations = stations.filter(s => s.id !== id); saveData(); renderStations(); }
+        function deletePkg(id) { packages = packages.filter(p => p.id !== id); saveData(); renderAdminPackages(); }
+        function deleteMenu(id) { menus = menus.filter(m => m.id !== id); saveData(); renderAdminMenu(); }
+
+        // Bootstrap
+        renderStations();
+
+    </script>
+</body>
+</html>
